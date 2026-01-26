@@ -3,7 +3,7 @@ import { useCharacterStore } from './store/useCharacterStore';
 import { useBattleStore } from './store/useBattleStore';
 import { BattleScreen } from './components/BattleScreen';
 import { ShopModal } from './components/shop/ShopModal';
-import { CharacterPanel } from './components/CharacterPanel';
+import { CharacterProfileModal } from './components/profile/CharacterProfileModal';
 import { GameLayout } from './components/layout/GameLayout';
 import { CityScreen } from './components/city/CityScreen';
 import { ZoneScreen } from './components/zone/ZoneScreen';
@@ -51,6 +51,20 @@ function App() {
   };
 
   if (!character) {
+     if (useCharacterStore.getState().error) {
+        return (
+          <div className="flex flex-col items-center justify-center h-screen bg-zinc-950 text-white gap-4">
+             <h2 className="text-xl text-red-500">Ошибка подключения</h2>
+             <p className="text-zinc-400">{useCharacterStore.getState().error}</p>
+             <button 
+               onClick={() => fetchCharacter(localStorage.getItem('urba_character_id') || 'char_123')}
+               className="px-4 py-2 bg-indigo-600 rounded hover:bg-indigo-700 transition"
+             >
+               Повторить
+             </button>
+          </div>
+        );
+     }
      return <div className="flex items-center justify-center h-screen bg-zinc-950 text-white">Loading...</div>;
   }
 
@@ -69,7 +83,7 @@ function App() {
       </GameLayout>
 
       {/* Overlays */}
-      <CharacterPanel />
+      <CharacterProfileModal />
       <ShopModal />
       
     </div>

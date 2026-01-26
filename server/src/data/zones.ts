@@ -1,4 +1,4 @@
-import { Zone, Monster } from '../../client/src/types/location';
+import { Zone, Monster } from '../types/location';
 
 // Monsters
 export const MONSTERS: Record<string, Monster> = {

@@ -8,7 +8,8 @@ export const api = axios.create({
 
 export const characterApi = {
   getCharacter: (id: string) => api.get(`/character/${id}`),
-  createCharacter: (nickname: string) => api.post('/character', { nickname }),
+  createCharacter: (nickname: string, faction: string = 'neutral', userId?: string) => 
+    api.post('/character', { nickname, faction, userId }),
   changeAlignment: (id: string, newAlignment: string) => api.post(`/character/${id}/alignment`, { newAlignment }),
   equipItem: (id: string, itemId: string, slotId?: string) => api.post(`/character/${id}/equip`, { itemId, slotId }),
   unequipItem: (id: string, slotId: string) => api.post(`/character/${id}/unequip`, { slotId }),

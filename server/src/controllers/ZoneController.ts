@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { ZONES, MONSTERS } from '../data/zones';
+import { Monster } from '../types/location';
 
 export const searchMonster = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const playerLevel = parseInt(req.query.playerLevel as string) || 1;
 
     const zone = ZONES[id];
@@ -16,13 +17,13 @@ export const searchMonster = async (req: Request, res: Response) => {
     const maxLevel = playerLevel + 1;
 
     let possibleMonsters = zone.monsters
-      .map(mid => MONSTERS[mid])
-      .filter(m => m.level >= minLevel && m.level <= maxLevel);
+      .map((mid: string) => MONSTERS[mid])
+      .filter((m: Monster) => m.level >= minLevel && m.level <= maxLevel);
 
     // If no monsters in range, find closest
     if (possibleMonsters.length === 0) {
-      const allZoneMonsters = zone.monsters.map(mid => MONSTERS[mid]);
-      possibleMonsters = allZoneMonsters.sort((a, b) => 
+      const allZoneMonsters = zone.monsters.map((mid: string) => MONSTERS[mid]);
+      possibleMonsters = allZoneMonsters.sort((a: Monster, b: Monster) => 
         Math.abs(a.level - playerLevel) - Math.abs(b.level - playerLevel)
       ).slice(0, 1); // Take the single closest one
     }
@@ -39,7 +40,7 @@ export const searchMonster = async (req: Request, res: Response) => {
 
 export const getZoneInfo = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const zone = ZONES[id];
         if (!zone) {
             return res.status(404).json({ error: 'Zone not found' });

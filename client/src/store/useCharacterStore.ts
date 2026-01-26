@@ -136,16 +136,29 @@ export const useCharacterStore = create<CharacterStore>((set) => ({
   }),
 
   fetchCharacter: async (id: string) => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
+      // Timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout')), 5000);
+      });
+
       let data;
       try {
-        const response = await characterApi.getCharacter(id);
+        const response: any = await Promise.race([
+          characterApi.getCharacter(id),
+          timeoutPromise
+        ]);
         data = response.data;
       } catch (err: any) {
+        if (err.message === 'Timeout') {
+          throw new Error('Сервер не отвечает. Попробуйте позже.');
+        }
         if (err.response && err.response.status === 404) {
           console.log('Character not found, creating new one...');
-          const createResponse = await characterApi.createCharacter('Player');
+          // Creating user if not found - pass hardcoded ID for now or random
+          // In real app, we need auth logic here
+          const createResponse = await characterApi.createCharacter('Player', 'neutral', id); // Pass ID as userId
           data = createResponse.data;
         } else {
           throw err;
@@ -153,32 +166,23 @@ export const useCharacterStore = create<CharacterStore>((set) => ({
       }
       
       // Map backend data to frontend structure
+      // Backend already returns data in CharacterProfile format thanks to formatCharacter
       const mappedProfile: CharacterProfile = {
-        id: data.id,
-        name: data.nickname,
-        level: data.level,
-        alignment: { side: data.faction as any, value: 0 },
-        registrationDate: 'Unknown',
-        citizenship: 'Citizen',
-        hp: { current: data.hp, max: 100 }, // Default max HP
-        energy: { current: 100, max: 100 },
-        fragments: data.money,
-        stats: {
-          strength: data.strength,
-          intuition: data.intuition,
-          agility: data.agility,
-          constitution: data.constitution,
-          will: data.will 
-        },
-        equipment: data.equipment || {},
-        inventory: data.inventory || [],
-        location: { city: 'nova-chimera', isTraveling: false }
+        ...DEFAULT_PROFILE, // Fallback for missing fields
+        ...data,
+        // Ensure nested objects are merged/copied correctly if needed, 
+        // but backend response should be authoritative.
+        // Special handling if backend returns 'money' instead of 'fragments' (it shouldn't, but just in case)
+        fragments: data.fragments ?? data.money ?? 0,
       };
       
       set({ character: mappedProfile, isLoading: false });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch character:', error);
-      set({ isLoading: false });
+      set({ 
+        isLoading: false, 
+        error: error.message || 'Ошибка загрузки персонажа' 
+      });
     }
   },
 

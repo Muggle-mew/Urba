@@ -46,21 +46,19 @@ export const createCharacter = async (req: Request, res: Response) => {
   try {
     const { nickname, faction, userId } = req.body;
     
-    // Временная заглушка: если userId не передан, используем тестовый или создаем нового юзера
-    let targetUserId = userId;
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
 
-    if (!targetUserId) {
-       // Для тестов создадим юзера, если его нет
-       // В реальном приложении userId берется из токена авторизации
-       const defaultUser = await prisma.user.create({
-         data: {}
-       });
-       targetUserId = defaultUser.id;
+    // Ensure user exists before creating character
+    const userExists = await prisma.user.findUnique({ where: { id: userId } });
+    if (!userExists) {
+        await prisma.user.create({ data: { id: userId } });
     }
 
     const newCharacter = await prisma.character.create({
       data: {
-        userId: targetUserId,
+        userId,
         nickname,
         faction,
         inventory: "[]",
