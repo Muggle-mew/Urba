@@ -27,7 +27,7 @@ const VENDOR_CONFIG: Record<CityId, { name: string; image: string; greeting: str
 
 export const ShopModal: React.FC = () => {
   const { isOpen, closeShop, activeCity, dailyItems, isLoading, buyItem } = useShopStore();
-  const { profile } = useCharacterStore();
+  const { character } = useCharacterStore();
   const [showCatalog, setShowCatalog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
 
@@ -39,15 +39,15 @@ export const ShopModal: React.FC = () => {
     }
   }, [isOpen]);
 
-  if (!isOpen || !activeCity) return null;
+  if (!isOpen || !activeCity || !character) return null;
 
   const vendor = VENDOR_CONFIG[activeCity];
-  const userFragments = profile.fragments || 0;
+  const userFragments = character.fragments || 0;
 
   const handleBuy = async (item: ShopItem) => {
-    if (userFragments < item.price || profile.level < item.levelReq) return;
+    if (userFragments < item.price || character.level < item.levelReq) return;
     
-    const success = await buyItem(item.id);
+    const success = await buyItem(character.id, item.id);
     if (success) {
       console.log(`Bought ${item.name}`);
     }
@@ -146,7 +146,7 @@ export const ShopModal: React.FC = () => {
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {dailyItems.map((item, index) => {
                           const canAfford = userFragments >= item.price;
-                          const levelMet = profile.level >= item.levelReq;
+                          const levelMet = character.level >= item.levelReq;
                           const isLocked = !canAfford || !levelMet;
 
                           return (

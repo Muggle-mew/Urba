@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { ChatWidget } from '../chat/ChatWidget';
 import { PlayerListWidget } from '../chat/PlayerListWidget';
-import { CharacterProfileModal } from '../profile/CharacterProfileModal';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { User, Settings, Map, LogOut } from 'lucide-react';
 
@@ -135,7 +134,6 @@ export const GameLayout: React.FC<GameLayoutProps> = ({ children }) => {
       </div>
 
       {/* Modals */}
-      <CharacterProfileModal />
     </div>
   );
 };

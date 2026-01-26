@@ -1,68 +1,79 @@
-import { Component, useState } from 'react';
-import type { ErrorInfo, ReactNode } from 'react';
-import { CombatScreen } from './components/combat/CombatScreen';
+import React, { useEffect } from 'react';
+import { useCharacterStore } from './store/useCharacterStore';
+import { useBattleStore } from './store/useBattleStore';
+import { BattleScreen } from './components/BattleScreen';
+import { ShopModal } from './components/shop/ShopModal';
+import { CharacterPanel } from './components/CharacterPanel';
 import { GameLayout } from './components/layout/GameLayout';
 import { CityScreen } from './components/city/CityScreen';
-import { useCharacterStore } from './store/useCharacterStore';
+import { ZoneScreen } from './components/zone/ZoneScreen';
+import { User, Settings } from 'lucide-react';
+import { clsx } from 'clsx';
+import type { Monster } from './types/location';
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
-  constructor(props: { children: ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-red-900 text-white p-8">
-          <h1 className="text-2xl font-bold mb-4">Something went wrong.</h1>
-          <pre className="bg-black/50 p-4 rounded overflow-auto">
-            {this.state.error?.toString()}
-          </pre>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-type ViewState = 'city' | 'combat';
+import { NotificationContainer } from './components/Notification';
 
 function App() {
-  const [currentView, setCurrentView] = useState<ViewState>('city');
-  const { profile } = useCharacterStore();
+  const { character, fetchCharacter, openProfile } = useCharacterStore();
+  const { battleId, initSocket, joinBattle } = useBattleStore();
+  
+  // Initialize app
+  useEffect(() => {
+    // In a real app, this would come from auth
+    const storedId = localStorage.getItem('urba_character_id') || 'char_123';
+    // Don't set item here, wait until we have a valid character
+    fetchCharacter(storedId);
+  }, [fetchCharacter]);
 
-  // If traveling, force city view
-  const activeView = profile.location.isTraveling ? 'city' : currentView;
+  // Save character ID to local storage when it changes
+  useEffect(() => {
+    if (character?.id) {
+      localStorage.setItem('urba_character_id', character.id);
+    }
+  }, [character?.id]);
+
+  // Initialize socket when character is loaded
+  useEffect(() => {
+    if (character?.id) {
+      initSocket(character.id);
+    }
+  }, [character?.id, initSocket]);
+
+  // View routing
+  const isInBattle = !!battleId;
+  const isZone = character?.location?.city?.startsWith('z');
+
+  const handleNavigateToCombat = (monster?: Monster) => {
+     if (character?.id) {
+       // TODO: Pass monster info to battle logic
+       joinBattle(character.id);
+     }
+  };
+
+  if (!character) {
+     return <div className="flex items-center justify-center h-screen bg-zinc-950 text-white">Loading...</div>;
+  }
 
   return (
-    <ErrorBoundary>
+    <div className="flex flex-col h-screen w-full bg-zinc-950 text-zinc-100 font-sans overflow-hidden">
+      <NotificationContainer />
+      
       <GameLayout>
-        {activeView === 'city' ? (
-          <CityScreen onNavigateToCombat={() => setCurrentView('combat')} />
+        {isInBattle ? (
+          <BattleScreen />
+        ) : isZone ? (
+          <ZoneScreen onNavigateToCombat={handleNavigateToCombat} />
         ) : (
-          <div className="relative h-full flex flex-col">
-            <button 
-              onClick={() => setCurrentView('city')}
-              className="absolute top-2 left-2 z-50 px-3 py-1 bg-gray-800 text-xs text-gray-300 rounded border border-gray-600 hover:bg-gray-700"
-            >
-              ← Вернуться в город
-            </button>
-            <CombatScreen />
-          </div>
+          <CityScreen onNavigateToCombat={() => handleNavigateToCombat()} />
         )}
       </GameLayout>
-    </ErrorBoundary>
-  )
+
+      {/* Overlays */}
+      <CharacterPanel />
+      <ShopModal />
+      
+    </div>
+  );
 }
 
-export default App
+export default App;

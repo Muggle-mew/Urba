@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import clsx from 'clsx';
 import { Send } from 'lucide-react';
 import { useChatStore } from '../../store/useChatStore';
+import { useCharacterStore } from '../../store/useCharacterStore';
 import type { ChatChannel } from '../../store/useChatStore';
 
 export const ChatWidget: React.FC = () => {
   const { messages, activeChannel, setActiveChannel, addMessage } = useChatStore();
+  const { character } = useCharacterStore();
   const [inputValue, setInputValue] = useState('');
 
   const filteredMessages = messages.filter(msg => msg.channel === activeChannel);
@@ -15,8 +17,8 @@ export const ChatWidget: React.FC = () => {
     if (!inputValue.trim()) return;
 
     addMessage({
-      sender: 'You', // TODO: Get from auth store
-      senderId: 'me',
+      sender: character?.name || 'You',
+      senderId: character?.id || 'me',
       text: inputValue,
       channel: activeChannel
     });

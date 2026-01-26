@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { characterApi } from '../services/api';
 
 export interface Item {
   id: string;
@@ -8,6 +9,7 @@ export interface Item {
   rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'artifact';
   stats?: Record<string, number>;
   description?: string;
+  price?: number;
 }
 
 export interface Equipment {
@@ -34,8 +36,11 @@ export interface CharacterStats {
 }
 
 export type CityId = 'nova-chimera' | 'rad-city' | 'echo-quarter';
+export type ZoneId = 'z1' | 'z2' | 'z3' | 'z4' | 'z5' | 'z6';
+export type LocationId = CityId | ZoneId;
 
 export interface CharacterProfile {
+  id: string; // Added ID
   name: string;
   level: number;
   alignment: {
@@ -51,106 +56,224 @@ export interface CharacterProfile {
   citizenship: string;
   hp: { current: number; max: number };
   energy: { current: number; max: number };
-  fragments: number;
+  fragments: number; // money
   stats: CharacterStats;
   equipment: Equipment;
   location: {
-    city: CityId;
+    city: LocationId; // Renamed concept but kept key for compatibility, now accepts ZoneId too
     isTraveling: boolean;
-    travelDestination?: CityId;
+    travelDestination?: LocationId;
     travelEndTime?: number;
   };
+  inventory?: Item[]; // Added inventory
 }
 
 interface CharacterStore {
-  profile: CharacterProfile;
+  character: CharacterProfile | null; // Renamed/Aliased
+  isLoading: boolean;
   isOpen: boolean;
   openProfile: () => void;
   closeProfile: () => void;
-  startTravel: (destination: CityId) => void;
+  startTravel: (destination: LocationId) => void;
   completeTravel: () => void;
+  fetchCharacter: (id: string) => Promise<void>;
+  updateCharacter: (updates: Partial<CharacterProfile>) => void;
+  changeAlignment: (newSide: string) => Promise<boolean>;
 }
 
-const MOCK_ITEM: Item = {
-  id: '1',
-  name: 'Меч тысячи истин',
-  type: 'weapon',
-  rarity: 'artifact',
-  stats: {
-    'Урон': 150,
-    'Сила': 10,
-    'Мф. крита': 50
-  },
-  description: 'Легендарное оружие, предсказанное в пророчестве.'
+const DEFAULT_PROFILE: CharacterProfile = {
+  id: 'temp-id',
+  name: 'Loading...',
+  level: 1,
+  alignment: { side: 'neutral', value: 0 },
+  registrationDate: new Date().toLocaleDateString(),
+  citizenship: 'wanderer',
+  hp: { current: 100, max: 100 },
+  energy: { current: 100, max: 100 },
+  fragments: 0,
+  stats: { strength: 10, agility: 10, intuition: 10, constitution: 10, will: 10 },
+  equipment: {},
+  location: { city: 'nova-chimera', isTraveling: false },
+  inventory: []
 };
 
-const MOCK_PROFILE: CharacterProfile = {
-  name: 'DIKAYA',
-  level: 23,
-  alignment: { side: 'synthesis', value: 2 },
-  clan: {
-    name: 'Избранные',
-    rank: 'Хранительница ключа Защиты',
-  },
-  registrationDate: '22 декабря 2004 г.',
-  citizenship: 'гражданин',
-  hp: { current: 1103, max: 1103 },
-  energy: { current: 96, max: 100 },
-  fragments: 1500,
-  stats: {
-    strength: 50,
-    agility: 300,
-    intuition: 234,
-    constitution: 33,
-    will: 45
-  },
-  equipment: {
-    helmet: { ...MOCK_ITEM, name: 'Шлем вечности', type: 'helmet' },
-    weapon: { ...MOCK_ITEM, name: 'Посох света', type: 'weapon' },
-    armor: { ...MOCK_ITEM, name: 'Туника заката', type: 'armor' },
-    ring1: { ...MOCK_ITEM, name: 'Кольцо всевластия', type: 'ring' },
-    boots: { ...MOCK_ITEM, name: 'Сандалии Гермеса', type: 'boots' },
-    pants: { ...MOCK_ITEM, name: 'Поножи теней', type: 'pants' }
-  },
-  location: {
-    city: 'nova-chimera',
-    isTraveling: false
-  }
-};
-
-export const useCharacterStore = create<CharacterStore>((set, get) => ({
-  profile: MOCK_PROFILE,
+export const useCharacterStore = create<CharacterStore>((set) => ({
+  character: null,
+  isLoading: false,
   isOpen: false,
+  
   openProfile: () => set({ isOpen: true }),
   closeProfile: () => set({ isOpen: false }),
-  startTravel: (destination: CityId) => {
-    const travelTime = 5 * 60 * 1000; // 5 minutes
-    set(state => ({
-      profile: {
-        ...state.profile,
+  
+  startTravel: (destination) => set((state) => {
+    if (!state.character) return {};
+    return {
+      character: {
+        ...state.character,
         location: {
-          ...state.profile.location,
+          city: state.character.location.city,
           isTraveling: true,
           travelDestination: destination,
-          travelEndTime: Date.now() + travelTime
+          travelEndTime: Date.now() + 5 * 60 * 1000 // 5 minutes
         }
       }
-    }));
-  },
-  completeTravel: () => {
-    const { profile } = get();
-    if (profile.location.isTraveling && profile.location.travelDestination) {
-      set(state => ({
-        profile: {
-          ...state.profile,
-          location: {
-            city: profile.location.travelDestination!,
-            isTraveling: false,
-            travelDestination: undefined,
-            travelEndTime: undefined
-          }
+    };
+  }),
+  
+  completeTravel: () => set((state) => {
+    if (!state.character?.location.travelDestination) return {};
+    return {
+      character: {
+        ...state.character,
+        location: {
+          city: state.character.location.travelDestination,
+          isTraveling: false,
+          travelDestination: undefined,
+          travelEndTime: undefined
         }
-      }));
+      }
+    };
+  }),
+
+  fetchCharacter: async (id: string) => {
+    set({ isLoading: true });
+    try {
+      let data;
+      try {
+        const response = await characterApi.getCharacter(id);
+        data = response.data;
+      } catch (err: any) {
+        if (err.response && err.response.status === 404) {
+          console.log('Character not found, creating new one...');
+          const createResponse = await characterApi.createCharacter('Player');
+          data = createResponse.data;
+        } else {
+          throw err;
+        }
+      }
+      
+      // Map backend data to frontend structure
+      const mappedProfile: CharacterProfile = {
+        id: data.id,
+        name: data.nickname,
+        level: data.level,
+        alignment: { side: data.faction as any, value: 0 },
+        registrationDate: 'Unknown',
+        citizenship: 'Citizen',
+        hp: { current: data.hp, max: 100 }, // Default max HP
+        energy: { current: 100, max: 100 },
+        fragments: data.money,
+        stats: {
+          strength: data.strength,
+          intuition: data.intuition,
+          agility: data.agility,
+          constitution: data.constitution,
+          will: data.will 
+        },
+        equipment: data.equipment || {},
+        inventory: data.inventory || [],
+        location: { city: 'nova-chimera', isTraveling: false }
+      };
+      
+      set({ character: mappedProfile, isLoading: false });
+    } catch (error) {
+      console.error('Failed to fetch character:', error);
+      set({ isLoading: false });
+    }
+  },
+
+  updateCharacter: (updates) => set((state) => ({
+    character: state.character ? { ...state.character, ...updates } : null
+  })),
+
+  changeAlignment: async (newSide) => {
+    set({ isLoading: true });
+    try {
+      // @ts-ignore - access state inside async function
+      const characterId = useCharacterStore.getState().character?.id;
+      if (!characterId) return false;
+
+      const response = await characterApi.changeAlignment(characterId, newSide);
+      const data = response.data;
+
+      // Update local state with new data
+      set((state) => {
+        if (!state.character) return {};
+        return {
+          character: {
+            ...state.character,
+            alignment: {
+              side: data.faction as any,
+              value: 0
+            },
+            fragments: data.money
+          },
+          isLoading: false
+        };
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to change alignment:', error);
+      set({ isLoading: false });
+      return false;
+    }
+  },
+
+  equipItem: async (itemId, slotId) => {
+    set({ isLoading: true });
+    try {
+      // @ts-ignore
+      const characterId = useCharacterStore.getState().character?.id;
+      if (!characterId) return false;
+
+      const response = await characterApi.equipItem(characterId, itemId, slotId);
+      const data = response.data;
+
+      set((state) => {
+        if (!state.character) return {};
+        return {
+          character: {
+            ...state.character,
+            inventory: data.inventory,
+            equipment: data.equipment
+          },
+          isLoading: false
+        };
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to equip item:', error);
+      set({ isLoading: false });
+      return false;
+    }
+  },
+
+  unequipItem: async (slotId) => {
+    set({ isLoading: true });
+    try {
+      // @ts-ignore
+      const characterId = useCharacterStore.getState().character?.id;
+      if (!characterId) return false;
+
+      const response = await characterApi.unequipItem(characterId, slotId);
+      const data = response.data;
+
+      set((state) => {
+        if (!state.character) return {};
+        return {
+          character: {
+            ...state.character,
+            inventory: data.inventory,
+            equipment: data.equipment
+          },
+          isLoading: false
+        };
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to unequip item:', error);
+      set({ isLoading: false });
+      return false;
     }
   }
 }));
