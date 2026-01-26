@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --color-terra-black: #0a0a0a;
+  --color-terra-dark: #1a1a1a;
+  --color-terra-gray: #2a2a2a;
+  --color-terra-accent: #c0392b;
+  --color-terra-gold: #f1c40f;
+  --color-terra-text: #ecf0f1;
+  --color-terra-green: #2ecc71;
+  --font-sans: 'Inter', sans-serif;
+}
+
+:root {
+  background-color: var(--color-terra-black);
+  color: var(--color-terra-text);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}

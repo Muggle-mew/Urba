@@ -1,0 +1,156 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(uuid())
+  telegramId   BigInt      @unique
+  username     String?
+  firstName    String?
+  lastName     String?
+  photoUrl     String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  
+  character    Character?
+}
+
+model Character {
+  id           String      @id @default(uuid())
+  userId       String      @unique
+  user         User        @relation(fields: [userId], references: [id])
+  nickname     String      @unique
+  
+  // Stats
+  level        Int         @default(1)
+  exp          Int         @default(0)
+  strength     Int         @default(5) // Сила
+  dexterity    Int         @default(5) // Ловкость
+  constitution Int         @default(5) // Телосложение
+  intuition    Int         @default(5) // Интуиция
+  will         Int         @default(5) // Воля
+  
+  // Resources
+  hp           Int         @default(100)
+  maxHp        Int         @default(100)
+  hunger       Int         @default(0)
+  money        Int         @default(0) // Терры
+  
+  // Location
+  city         String      @default("Chimera-City")
+  location     String      @default("Central Square")
+  
+  // Relations
+  inventory    InventoryItem[]
+  equipment    Equipment?
+  guildId      String?
+  guild        Guild?      @relation(fields: [guildId], references: [id])
+  faction      Faction?    @relation(fields: [factionId], references: [id])
+  factionId    String?
+  
+  battles      BattleParticipant[]
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Equipment {
+  id           String    @id @default(uuid())
+  characterId  String    @unique
+  character    Character @relation(fields: [characterId], references: [id])
+  
+  head         String?   // Item ID
+  chest        String?
+  stomach      String?
+  legs         String?
+  feet         String?
+  hands        String?
+  neck         String?
+  ring1        String?
+  ring2        String?
+  weapon       String?
+  shield       String?
+  accessory    String?
+}
+
+model Item {
+  id           String    @id @default(uuid())
+  name         String
+  type         String    // WEAPON, ARMOR, CONSUMABLE, RESOURCE
+  slot         String?   // HEAD, CHEST, etc.
+  stats        Json?     // { str: 1, dex: 2 }
+  requirements Json?     // { level: 5, str: 10 }
+  price        Int
+  
+  inventoryItems InventoryItem[]
+}
+
+model InventoryItem {
+  id          String    @id @default(uuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id])
+  itemId      String
+  item        Item      @relation(fields: [itemId], references: [id])
+  quantity    Int       @default(1)
+  
+  @@unique([characterId, itemId])
+}
+
+model Guild {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  tag         String      @unique
+  level       Int         @default(1)
+  members     Character[]
+  factionId   String?
+  faction     Faction?    @relation(fields: [factionId], references: [id])
+}
+
+model Faction {
+  id          String      @id @default(uuid())
+  name        String      @unique // General, Oligarch, Pope, etc.
+  description String?
+  bonus       Json?       // Passive bonuses
+  
+  characters  Character[]
+  guilds      Guild[]
+}
+
+model Battle {
+  id          String              @id @default(uuid())
+  type        String              // DUEL, TEAM, CHAOS, STREET, HUNT
+  status      String              // WAITING, IN_PROGRESS, FINISHED
+  createdAt   DateTime            @default(now())
+  finishedAt  DateTime?
+  
+  participants BattleParticipant[]
+  logs         BattleLog[]
+}
+
+model BattleParticipant {
+  id          String    @id @default(uuid())
+  battleId    String
+  battle      Battle    @relation(fields: [battleId], references: [id])
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id])
+  team        Int       // 1 or 2
+  isAlive     Boolean   @default(true)
+}
+
+model BattleLog {
+  id          String    @id @default(uuid())
+  battleId    String
+  battle      Battle    @relation(fields: [battleId], references: [id])
+  turn        Int
+  message     String
+  data        Json?     // Structured data about the hit
+  createdAt   DateTime  @default(now())
+}
