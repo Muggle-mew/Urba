@@ -95,6 +95,48 @@ export const getCharacter = async (req: Request, res: Response) => {
   }
 };
 
+export const moveCharacter = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { destination } = req.body;
+
+    if (!destination) {
+      return res.status(400).json({ error: 'Destination is required' });
+    }
+
+    const character = await prisma.character.findUnique({
+      where: { id: String(id) }
+    });
+
+    if (!character) {
+      return res.status(404).json({ error: 'Character not found' });
+    }
+
+    // Parse current location to preserve other fields if any
+    const currentLocation = safeParse(character.location, { city: 'nova-chimera', isTraveling: false });
+    
+    const newLocation = {
+      ...currentLocation,
+      city: destination,
+      isTraveling: false,
+      travelDestination: undefined,
+      travelEndTime: undefined
+    };
+
+    const updatedCharacter = await prisma.character.update({
+      where: { id: String(id) },
+      data: {
+        location: JSON.stringify(newLocation)
+      }
+    });
+
+    res.json(formatCharacter(updatedCharacter));
+  } catch (error) {
+    console.error('Error moving character:', error);
+    res.status(500).json({ error: 'Failed to move character' });
+  }
+};
+
 export const changeAlignment = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

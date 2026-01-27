@@ -1,37 +1,48 @@
 import { Request, Response } from 'express';
-import { ZONES, MONSTERS } from '../data/zones';
-import { Monster } from '../types/location';
+import { PrismaClient } from '@prisma/client';
+import { ZONES } from '../data/zones';
+
+const prisma = new PrismaClient();
 
 export const searchMonster = async (req: Request, res: Response) => {
   try {
-    const id = req.params.id as string;
+    const zoneId = req.params.id as string;
     const playerLevel = parseInt(req.query.playerLevel as string) || 1;
 
-    const zone = ZONES[id];
-    if (!zone) {
-      return res.status(404).json({ error: 'Zone not found' });
+    // Find ALL monsters in this zone (we scale them dynamically)
+    let monsters = await prisma.monster.findMany({
+      where: { zoneId: zoneId }
+    });
+
+    if (monsters.length === 0) {
+       return res.status(404).json({ error: 'No monsters found in this zone' });
     }
 
-    // Filter monsters by level range [N-1, N+1]
-    const minLevel = playerLevel - 1;
-    const maxLevel = playerLevel + 1;
+    // Pick random
+    const baseMonster = monsters[Math.floor(Math.random() * monsters.length)];
 
-    let possibleMonsters = zone.monsters
-      .map((mid: string) => MONSTERS[mid])
-      .filter((m: Monster) => m.level >= minLevel && m.level <= maxLevel);
+    // Calculate target level: playerLevel +/- 3, min 1
+    const variation = Math.floor(Math.random() * 7) - 3; // -3 to +3
+    const targetLevel = Math.max(1, playerLevel + variation);
 
-    // If no monsters in range, find closest
-    if (possibleMonsters.length === 0) {
-      const allZoneMonsters = zone.monsters.map((mid: string) => MONSTERS[mid]);
-      possibleMonsters = allZoneMonsters.sort((a: Monster, b: Monster) => 
-        Math.abs(a.level - playerLevel) - Math.abs(b.level - playerLevel)
-      ).slice(0, 1); // Take the single closest one
-    }
+    // Scale stats (assuming linear scaling from base level)
+    const multiplier = targetLevel / Math.max(1, baseMonster.level);
 
-    // Pick random monster from possible ones
-    const randomMonster = possibleMonsters[Math.floor(Math.random() * possibleMonsters.length)];
+    const scaledMonster = {
+        ...baseMonster,
+        level: targetLevel,
+        hp: Math.floor(baseMonster.hp * multiplier),
+        maxHp: Math.floor(baseMonster.maxHp * multiplier),
+        strength: Math.floor(baseMonster.strength * multiplier),
+        agility: Math.floor(baseMonster.agility * multiplier),
+        intuition: Math.floor(baseMonster.intuition * multiplier),
+        will: Math.floor(baseMonster.will * multiplier),
+        constitution: Math.floor(baseMonster.constitution * multiplier),
+        expReward: Math.floor(baseMonster.expReward * multiplier),
+        moneyReward: Math.floor(baseMonster.moneyReward * multiplier),
+    };
 
-    res.json({ monster: randomMonster });
+    res.json({ monster: scaledMonster });
   } catch (error) {
     console.error('Error searching monster:', error);
     res.status(500).json({ error: 'Failed to search monster' });
@@ -43,7 +54,13 @@ export const getZoneInfo = async (req: Request, res: Response) => {
         const id = req.params.id as string;
         const zone = ZONES[id];
         if (!zone) {
-            return res.status(404).json({ error: 'Zone not found' });
+            // Minimal fallback
+            return res.json({ 
+                id, 
+                name: `Zone ${id}`, 
+                description: 'Unknown Zone',
+                imagePath: `/assets/zones/${id}.jpg`
+            });
         }
         res.json(zone);
     } catch (error) {

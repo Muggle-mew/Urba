@@ -104,7 +104,7 @@ export const GameLayout: React.FC<GameLayoutProps> = ({ children }) => {
       </header>
 
       {/* Main Content Area (Game View) */}
-      <main className="flex-1 overflow-y-auto relative bg-terra-black custom-scrollbar">
+      <main className="flex-1 overflow-hidden relative bg-terra-black">
         {children}
       </main>
 

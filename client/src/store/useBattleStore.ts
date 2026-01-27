@@ -45,10 +45,13 @@ interface BattleState {
   // Socket Actions
   initSocket: (characterId: string) => void;
   joinBattle: (characterId: string) => void;
+  startPvEBattle: (characterId: string, monsterId: string, monsterLevel?: number) => void;
   sendMove: (characterId: string, attack: BodyPart, block: [BodyPart, BodyPart]) => void;
+  socket: typeof socket; // Expose socket
 }
 
 export const useBattleStore = create<BattleState>((set, get) => ({
+  socket, // Expose socket
   battleId: null,
   player: null,
   opponent: null,
@@ -115,18 +118,20 @@ export const useBattleStore = create<BattleState>((set, get) => ({
             name: pData.name,
             hp: pData.hp,
             maxHp: pData.maxHp,
-            level: 1,
+            level: pData.level || 1,
             damage: pData.lastDamage,
-            isCrit: pData.isCrit
+            isCrit: pData.isCrit,
+            avatarUrl: pData.avatar
           },
           opponent: oData ? {
             id: oData.characterId,
             name: oData.name,
             hp: oData.hp,
             maxHp: oData.maxHp,
-            level: 1,
+            level: oData.level || 1,
             damage: oData.lastDamage,
-            isCrit: oData.isCrit
+            isCrit: oData.isCrit,
+            avatarUrl: oData.avatar
           } : null,
           logs: state.logs
         });
@@ -147,6 +152,10 @@ export const useBattleStore = create<BattleState>((set, get) => ({
 
   joinBattle: (characterId: string) => {
     socket.emit('battle_join', { characterId });
+  },
+
+  startPvEBattle: (characterId: string, monsterId: string, monsterLevel?: number) => {
+    socket.emit('battle_start_pve', { characterId, monsterId, monsterLevel });
   },
 
   sendMove: (characterId: string, attack: BodyPart, block: [BodyPart, BodyPart]) => {

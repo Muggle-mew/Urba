@@ -8,6 +8,7 @@ interface CharacterDollProps {
   hp: number;
   maxHp: number;
   isRight?: boolean; // If true, mirrors the layout for opponent
+  avatarUrl?: string;
 }
 
 const Slot = ({ label, className }: { label?: string, className?: string }) => (
@@ -19,7 +20,13 @@ const Slot = ({ label, className }: { label?: string, className?: string }) => (
   </div>
 );
 
-export const CharacterDoll: React.FC<CharacterDollProps> = ({ name, level, hp, maxHp, isRight = false }) => {
+export const CharacterDoll: React.FC<CharacterDollProps> = ({ name, level, hp, maxHp, isRight = false, avatarUrl }) => {
+  const imageSrc = avatarUrl 
+    ? (avatarUrl.startsWith('http') || avatarUrl.startsWith('/') 
+        ? avatarUrl 
+        : `/assets/maps/${avatarUrl}`)
+    : `https://api.dicebear.com/7.x/lorelei/svg?seed=${name}`;
+
   return (
     <div className="flex flex-col items-center w-full max-w-[300px]">
       {/* Header Info */}
@@ -62,7 +69,7 @@ export const CharacterDoll: React.FC<CharacterDollProps> = ({ name, level, hp, m
                {/* Silhouette / Avatar Image Placeholder */}
                <div className="h-[80%] w-full max-w-[120px] bg-gradient-to-b from-gray-700 to-transparent opacity-20 rounded-full blur-xl absolute"></div>
                <img 
-                 src="https://api.dicebear.com/7.x/lorelei/svg?seed=Felix" 
+                 src={imageSrc} 
                  alt="avatar" 
                  className={clsx("h-full object-contain drop-shadow-2xl grayscale hover:grayscale-0 transition-all duration-500", isRight && "scale-x-[-1]")}
                />

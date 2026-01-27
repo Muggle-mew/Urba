@@ -15,7 +15,7 @@ import { NotificationContainer } from './components/Notification';
 
 function App() {
   const { character, fetchCharacter, openProfile } = useCharacterStore();
-  const { battleId, initSocket, joinBattle } = useBattleStore();
+  const { battleId, initSocket, joinBattle, startPvEBattle } = useBattleStore();
   
   // Initialize app
   useEffect(() => {
@@ -45,8 +45,11 @@ function App() {
 
   const handleNavigateToCombat = (monster?: Monster) => {
      if (character?.id) {
-       // TODO: Pass monster info to battle logic
-       joinBattle(character.id);
+       if (monster) {
+         startPvEBattle(character.id, monster.id, monster.level);
+       } else {
+         joinBattle(character.id);
+       }
      }
   };
 

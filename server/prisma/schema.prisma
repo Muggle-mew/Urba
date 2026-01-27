@@ -75,3 +75,23 @@ model DailyShop {
   
   @@unique([characterId, date])
 }
+
+model Monster {
+  id           String   @id @default(uuid())
+  name         String
+  level        Int
+  zoneId       String   // z1, z2, etc.
+  
+  // Stats
+  hp           Int
+  maxHp        Int
+  strength     Int
+  agility      Int
+  intuition    Int
+  will         Int
+  constitution Int
+  
+  image        String?
+  expReward    Int
+  moneyReward  Int
+}

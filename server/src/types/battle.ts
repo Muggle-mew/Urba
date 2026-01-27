@@ -18,12 +18,18 @@ export interface BattlePlayer {
   maxHp: number;
   stats: {
     strength: number;
+    agility: number;
     intuition: number;
+    will: number;
+    constitution: number;
   };
   currentMove?: PlayerMove;
   lastDamage: number;
   isCrit: boolean;
+  isBlocked?: boolean;
+  isDodge?: boolean;
   avatar?: string;
+  level?: number;
 }
 
 export interface BattleState {

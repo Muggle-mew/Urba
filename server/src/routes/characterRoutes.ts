@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createCharacter, getCharacter, changeAlignment, equipItem, unequipItem } from '../controllers/characterController';
+import { createCharacter, getCharacter, changeAlignment, equipItem, unequipItem, moveCharacter } from '../controllers/CharacterController';
 
 const router = Router();
 
@@ -8,6 +8,9 @@ router.post('/', createCharacter);
 
 // GET /api/character/:id - Получить персонажа по ID
 router.get('/:id', getCharacter);
+
+// POST /api/character/:id/move - Перемещение персонажа
+router.post('/:id/move', moveCharacter);
 
 // POST /api/character/:id/alignment - Сменить фракцию
 router.post('/:id/alignment', changeAlignment);

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useCharacterStore } from '../../store/useCharacterStore';
 import { useZoneStore } from '../../store/useZoneStore';
 import type { Monster } from '../../types/location';
+import { WorldMapModal } from '../map/WorldMapModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Swords, Search, Navigation, AlertTriangle, Skull, ArrowRight } from 'lucide-react';
 import clsx from 'clsx';
@@ -107,60 +108,62 @@ export const ZoneScreen: React.FC<ZoneScreenProps> = ({ onNavigateToCombat }) =>
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex-1 flex flex-col p-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 text-red-500 mb-2 uppercase tracking-widest text-xs font-bold bg-black/50 px-3 py-1 rounded w-fit backdrop-blur-sm border border-red-900/30">
-            <AlertTriangle size={12} />
-            <span>Опасная зона</span>
-          </div>
-          <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">{currentZone.name}</h1>
-          <p className="text-xl text-gray-300 max-w-2xl drop-shadow-md">{currentZone.description}</p>
-        </div>
-
-        {/* Main Interaction Area */}
-        <div className="flex-1 flex items-center justify-center gap-12">
-          
-          {/* Left: Actions */}
-          <div className="flex flex-col gap-6 w-1/3">
-             {/* Search Button */}
-            <button
-              onClick={handleSearch}
-              disabled={isLoading || !!foundMonster}
-              className={clsx(
-                "group relative overflow-hidden p-8 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center text-center",
-                foundMonster 
-                  ? "bg-gray-900/50 border-gray-700 text-gray-500 cursor-not-allowed" 
-                  : "bg-black/60 border-yellow-600/50 hover:bg-yellow-900/20 hover:border-yellow-500 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]"
-              )}
-            >
-              <div className={clsx("mb-4 p-4 rounded-full transition-all", foundMonster ? "bg-gray-800" : "bg-yellow-900/50 group-hover:bg-yellow-600 text-yellow-500 group-hover:text-black")}>
-                <Search size={48} className={isLoading ? "animate-spin" : ""} />
+      <div className="relative z-10 flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+          <div className="min-h-full flex flex-col">
+            {/* Header */}
+            <div className="mb-8 shrink-0">
+              <div className="flex items-center gap-2 text-red-500 mb-2 uppercase tracking-widest text-xs font-bold bg-black/50 px-3 py-1 rounded w-fit backdrop-blur-sm border border-red-900/30">
+                <AlertTriangle size={12} />
+                <span>Опасная зона</span>
               </div>
-              <h3 className="text-2xl font-bold mb-2">Поиск противника</h3>
-              <p className="text-sm opacity-70">Исследовать территорию в поисках угроз</p>
-            </button>
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">{currentZone.name}</h1>
+              <p className="text-lg md:text-xl text-gray-300 max-w-2xl drop-shadow-md">{currentZone.description}</p>
+            </div>
 
-            {/* Travel Button */}
-            <button 
-              onClick={() => setShowTravelModal(true)}
-              className="group p-6 rounded-2xl border-2 border-blue-900/50 bg-black/60 hover:bg-blue-900/20 hover:border-blue-500 transition-all flex items-center justify-between"
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-900/30 rounded-full text-blue-400 group-hover:text-blue-200">
-                  <Navigation size={24} />
-                </div>
-                <div className="text-left">
-                  <h3 className="font-bold text-lg text-blue-100">Покинуть зону</h3>
-                  <p className="text-xs text-blue-400/70">Перемещение в соседнюю локацию</p>
-                </div>
+            {/* Main Interaction Area */}
+            <div className="flex-grow flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12 pb-48">
+              
+              {/* Left: Actions */}
+              <div className="flex flex-col gap-4 lg:gap-6 w-full lg:w-1/3 shrink-0">
+                 {/* Search Button */}
+                <button
+                  onClick={handleSearch}
+                  disabled={isLoading || !!foundMonster}
+                  className={clsx(
+                    "group relative overflow-hidden p-6 lg:p-8 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center text-center",
+                    foundMonster 
+                      ? "bg-gray-900/50 border-gray-700 text-gray-500 cursor-not-allowed" 
+                      : "bg-black/60 border-yellow-600/50 hover:bg-yellow-900/20 hover:border-yellow-500 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]"
+                  )}
+                >
+                  <div className={clsx("mb-4 p-4 rounded-full transition-all shrink-0", foundMonster ? "bg-gray-800" : "bg-yellow-900/50 group-hover:bg-yellow-600 text-yellow-500 group-hover:text-black")}>
+                    <Search className={clsx("w-8 h-8 lg:w-12 lg:h-12", isLoading ? "animate-spin" : "")} />
+                  </div>
+                  <h3 className="text-xl lg:text-2xl font-bold mb-2">Поиск противника</h3>
+                  <p className="text-sm opacity-70">Исследовать территорию</p>
+                </button>
+
+                {/* Travel Button */}
+                <button 
+                  onClick={() => setShowTravelModal(true)}
+                  className="group p-4 lg:p-6 rounded-2xl border-2 border-blue-900/50 bg-black/60 hover:bg-blue-900/20 hover:border-blue-500 transition-all flex items-center justify-between shrink-0"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-900/30 rounded-full text-blue-400 group-hover:text-blue-200">
+                      <Navigation className="w-6 h-6 lg:w-8 lg:h-8" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-bold text-lg text-blue-100">Покинуть зону</h3>
+                      <p className="text-xs text-blue-400/70 hidden lg:block">Перемещение в соседнюю локацию</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="text-blue-500 group-hover:translate-x-1 transition-transform" />
+                </button>
               </div>
-              <ArrowRight className="text-blue-500 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
 
-          {/* Right: Found Monster Card */}
-          <div className="w-1/3 h-[500px] flex items-center justify-center">
+              {/* Right: Found Monster Card */}
+              <div className="w-full lg:w-1/3 h-auto min-h-[300px] max-h-[600px] aspect-[3/4] shrink-0 flex items-center justify-center">
             <AnimatePresence mode="wait">
               {foundMonster ? (
                 <motion.div
@@ -168,12 +171,12 @@ export const ZoneScreen: React.FC<ZoneScreenProps> = ({ onNavigateToCombat }) =>
                   initial={{ opacity: 0, scale: 0.9, x: 50 }}
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.9, x: 50 }}
-                  className="w-full bg-gray-900/90 border border-red-900/50 rounded-2xl overflow-hidden shadow-2xl relative"
+                  className="w-full h-full max-h-[500px] bg-gray-900/90 border border-red-900/50 rounded-2xl overflow-hidden shadow-2xl relative flex flex-col"
                 >
                   {/* Monster Image */}
-                  <div className="h-64 bg-black relative overflow-hidden group">
+                  <div className="flex-1 bg-black relative overflow-hidden group min-h-0">
                      <img 
-                      src={`/assets/maps/zones/monsters/${foundMonster.image}`} 
+                      src={foundMonster.image.includes('/') ? `/assets/maps/${foundMonster.image}` : `/assets/maps/zones/monsters/${foundMonster.image}`} 
                       alt={foundMonster.name}
                       className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-700"
                       onError={(e) => e.currentTarget.src = '/assets/monsters/default.png'} // Fallback
@@ -184,9 +187,9 @@ export const ZoneScreen: React.FC<ZoneScreenProps> = ({ onNavigateToCombat }) =>
                   </div>
 
                   {/* Info */}
-                  <div className="p-6">
-                    <h3 className="text-3xl font-bold text-white mb-2">{foundMonster.name}</h3>
-                    <div className="flex items-center gap-4 mb-6">
+                  <div className="p-4 lg:p-6 shrink-0">
+                    <h3 className="text-2xl lg:text-3xl font-bold text-white mb-2 truncate">{foundMonster.name}</h3>
+                    <div className="flex items-center gap-4 mb-4 lg:mb-6">
                       <div className="flex items-center gap-2 text-green-400 bg-green-900/20 px-3 py-1 rounded-full">
                         <HeartPulse size={16} />
                         <span className="font-bold">{foundMonster.hp} HP</span>
@@ -222,47 +225,16 @@ export const ZoneScreen: React.FC<ZoneScreenProps> = ({ onNavigateToCombat }) =>
           </div>
 
         </div>
+          </div>
+        </div>
       </div>
 
       {/* Travel Modal */}
-      {showTravelModal && (
-        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-8 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-2xl w-full shadow-2xl">
-            <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
-              <Navigation className="text-blue-500" />
-              Куда направимся?
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {currentZone.connectedTo.map((targetId) => (
-                <button
-                  key={targetId}
-                  onClick={() => {
-                    startTravel(targetId as any);
-                    setShowTravelModal(false);
-                  }}
-                  className="p-6 bg-gray-800 border border-gray-700 rounded-xl hover:bg-gray-700 hover:border-blue-500 transition-all text-left group"
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-lg font-bold text-white group-hover:text-blue-300 transition-colors">
-                      {LOCATION_NAMES[targetId] || targetId}
-                    </span>
-                    <ArrowRight className="text-gray-500 group-hover:text-blue-400 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                  <p className="text-sm text-gray-400">Время пути: 5 мин.</p>
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setShowTravelModal(false)}
-              className="mt-8 w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
-            >
-              Отмена
-            </button>
-          </div>
-        </div>
-      )}
+      <WorldMapModal 
+        isOpen={showTravelModal} 
+        onClose={() => setShowTravelModal(false)} 
+        restrictTravel={true}
+      />
     </div>
   );
 };

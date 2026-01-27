@@ -97,7 +97,7 @@ const DEFAULT_PROFILE: CharacterProfile = {
   inventory: []
 };
 
-export const useCharacterStore = create<CharacterStore>((set) => ({
+export const useCharacterStore = create<CharacterStore>((set, get) => ({
   character: null,
   isLoading: false,
   isOpen: false,
@@ -114,26 +114,39 @@ export const useCharacterStore = create<CharacterStore>((set) => ({
           city: state.character.location.city,
           isTraveling: true,
           travelDestination: destination,
-          travelEndTime: Date.now() + 5 * 60 * 1000 // 5 minutes
+          // travelEndTime: Date.now() + 5 * 60 * 1000 // 5 minutes (Production)
+          travelEndTime: Date.now() + 10 * 1000 // 10 seconds (Dev/Test)
         }
       }
     };
   }),
   
-  completeTravel: () => set((state) => {
-    if (!state.character?.location.travelDestination) return {};
-    return {
-      character: {
+  completeTravel: async () => {
+    const state = get();
+    if (!state.character?.location.travelDestination) return;
+    
+    const destination = state.character.location.travelDestination;
+    const characterId = state.character.id;
+
+    // Optimistic update
+    set((state) => ({
+      character: state.character ? {
         ...state.character,
         location: {
-          city: state.character.location.travelDestination,
+          city: destination,
           isTraveling: false,
           travelDestination: undefined,
           travelEndTime: undefined
         }
-      }
-    };
-  }),
+      } : null
+    }));
+
+    try {
+      await characterApi.move(characterId, destination);
+    } catch (error) {
+      console.error('Failed to sync move with server:', error);
+    }
+  },
 
   fetchCharacter: async (id: string) => {
     set({ isLoading: true, error: null });

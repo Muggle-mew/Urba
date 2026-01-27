@@ -10,6 +10,11 @@ export const setupBattleHandlers = (io: Server, battleService: BattleService) =>
       battleService.joinBattle(socket, data.characterId);
     });
 
+    socket.on('battle_start_pve', (data: { characterId: string, monsterId: string, monsterLevel?: number }) => {
+      if (!data.characterId || !data.monsterId) return;
+      battleService.startPvEBattle(socket, data.characterId, data.monsterId, data.monsterLevel);
+    });
+
     socket.on('battle_turn', (data: { move: PlayerMove }) => {
       battleService.handleTurn(socket, data.move);
     });

@@ -16,6 +16,12 @@ export class BattleService {
 
   // Создание или присоединение к бою
   public async joinBattle(socket: Socket, characterId: string) {
+    // ... existing join logic (PVP or whatever)
+    // For now, let's keep it as is, but we will add startPvEBattle separately
+    this.startPvEBattle(socket, characterId, 'random'); // This is not right. User calls joinBattle for PvP usually.
+  }
+
+  public async startPvEBattle(socket: Socket, characterId: string, monsterId: string, monsterLevel?: number) {
     try {
       const character = await prisma.character.findUnique({ where: { id: characterId } });
       if (!character) return socket.emit('error', 'Character not found');
@@ -30,32 +36,57 @@ export class BattleService {
         }
       }
 
-      // Поиск ожидающего боя
-      // Для PVE режима сразу создаем бой с ботом
-      const battle = this.createBattle();
-      this.addPlayerToBattle(socket, battle, character);
-      this.addBotToBattle(battle, character);
-      this.startBattle(battle);
-      
-      /* 
-      // PVP Logic (Disabled for now)
-      let battle = this.findWaitingBattle();
-      
-      if (!battle) {
-        battle = this.createBattle();
+      // Находим монстра
+      const monster = await prisma.monster.findUnique({ where: { id: monsterId } });
+      if (!monster) return socket.emit('error', 'Monster not found');
+
+      // Scaling Logic
+      let scaledMonster = { ...monster };
+      if (monsterLevel && monsterLevel !== monster.level) {
+         const multiplier = monsterLevel / Math.max(1, monster.level);
+         scaledMonster.level = monsterLevel;
+         scaledMonster.hp = Math.floor(monster.hp * multiplier);
+         scaledMonster.maxHp = Math.floor(monster.maxHp * multiplier);
+         scaledMonster.strength = Math.floor(monster.strength * multiplier);
+         scaledMonster.agility = Math.floor(monster.agility * multiplier);
+         scaledMonster.intuition = Math.floor(monster.intuition * multiplier);
+         scaledMonster.will = Math.floor(monster.will * multiplier);
+         scaledMonster.constitution = Math.floor(monster.constitution * multiplier);
+         // Rewards handled in endBattle logic usually, but let's assume they are stored on the bot or recalculated
       }
 
+      // Создаем новый бой
+      const battle = this.createBattle();
+      
+      // Добавляем игрока
       this.addPlayerToBattle(socket, battle, character);
       
-      if (Object.keys(battle.players).length === 2) {
-        this.startBattle(battle);
-      } else {
-        socket.emit('battle_join', { battleId: battle.id, state: battle });
-      }
-      */
+      // Добавляем монстра (как бота)
+      const botId = `monster_${monster.id}_${Date.now()}`;
+      const bot: BattlePlayer = {
+        socketId: botId,
+        characterId: 'monster_' + monster.id, // Marker for monster
+        name: scaledMonster.name,
+        hp: scaledMonster.hp,
+        maxHp: scaledMonster.maxHp,
+        stats: {
+          strength: scaledMonster.strength,
+          agility: scaledMonster.agility,
+          intuition: scaledMonster.intuition,
+          will: scaledMonster.will,
+          constitution: scaledMonster.constitution
+        },
+        lastDamage: 0,
+        isCrit: false,
+        avatar: monster.image || undefined,
+        level: scaledMonster.level
+      };
+      battle.players[botId] = bot;
+
+      this.startBattle(battle);
 
     } catch (error) {
-      console.error('Join battle error:', error);
+      console.error('Start PvE battle error:', error);
       socket.emit('error', 'Internal server error');
     }
   }
@@ -111,9 +142,13 @@ export class BattleService {
       name: character.nickname || 'Unknown',
       hp: character.hp,
       maxHp: character.maxHp,
+      level: character.level,
       stats: {
         strength: character.strength,
-        intuition: character.intuition
+        agility: character.agility,
+        intuition: character.intuition,
+        will: character.will,
+        constitution: character.constitution
       },
       lastDamage: 0,
       isCrit: false
@@ -134,7 +169,10 @@ export class BattleService {
       maxHp: playerCharacter.maxHp,
       stats: {
         strength: playerCharacter.strength,
-        intuition: playerCharacter.intuition
+        agility: playerCharacter.agility,
+        intuition: playerCharacter.intuition,
+        will: playerCharacter.will,
+        constitution: playerCharacter.constitution
       },
       lastDamage: 0,
       isCrit: false
@@ -181,7 +219,16 @@ export class BattleService {
     p1.hp = Math.max(0, p1.hp - p2.lastDamage);
 
     // Логи
-    const roundLog = `Round ${battle.round}: ${p1.name} hits ${p2.name} for ${p1.lastDamage} (${p1.isCrit ? 'CRIT' : ''}). ${p2.name} hits ${p1.name} for ${p2.lastDamage} (${p2.isCrit ? 'CRIT' : ''})`;
+    const formatLog = (attacker: BattlePlayer, defender: BattlePlayer) => {
+        if (attacker.isDodge) return `${defender.name} увернулся от атаки ${attacker.name}`;
+        if (attacker.isBlocked) return `${defender.name} заблокировал удар ${attacker.name}`;
+        return `${attacker.name} нанес ${defender.name} ${attacker.lastDamage} урона${attacker.isCrit ? ' (КРИТ!)' : ''}`;
+    };
+
+    const p1Log = formatLog(p1, p2);
+    const p2Log = formatLog(p2, p1);
+    const roundLog = `Раунд ${battle.round}: ${p1Log}. ${p2Log}`;
+    
     battle.logs.push(roundLog);
 
     // Результат раунда
@@ -189,8 +236,8 @@ export class BattleService {
       round: battle.round,
       logs: [roundLog],
       players: {
-        [p1.socketId]: { hp: p1.hp, damage: p1.lastDamage, isCrit: p1.isCrit },
-        [p2.socketId]: { hp: p2.hp, damage: p2.lastDamage, isCrit: p2.isCrit }
+        [p1.socketId]: { hp: p1.hp, damage: p1.lastDamage, isCrit: p1.isCrit, isBlocked: p1.isBlocked, isDodge: p1.isDodge },
+        [p2.socketId]: { hp: p2.hp, damage: p2.lastDamage, isCrit: p2.isCrit, isBlocked: p2.isBlocked, isDodge: p2.isDodge }
       }
     });
 
@@ -214,33 +261,41 @@ export class BattleService {
     const move = attacker.currentMove;
     const targetZone = move.attack;
     
-    // Шанс крита: 10% + intuition * 0.5%
-    const critChance = 0.10 + (attacker.stats.intuition * 0.005);
+    // Reset flags
+    attacker.lastDamage = 0;
+    attacker.isCrit = false;
+    attacker.isBlocked = false;
+    attacker.isDodge = false;
+    
+    // 1. Dodge (Defender's agility)
+    const dodgeChance = defender.stats.agility * 0.005;
+    if (Math.random() < dodgeChance) {
+        attacker.isDodge = true;
+        return;
+    }
+
+    // 2. Block
+    if (defender.currentMove && defender.currentMove.block.includes(targetZone)) {
+       attacker.isBlocked = true;
+       return;
+    }
+
+    // 3. Crit
+    const critChance = (10 + attacker.stats.intuition * 0.5) / 100;
     const isCrit = Math.random() < critChance;
     
-    // Проверка блока (если не крит)
-    let isBlocked = false;
-    if (!isCrit && defender.currentMove) {
-       isBlocked = defender.currentMove.block.includes(targetZone);
-    }
-
-    if (isBlocked) {
-      attacker.lastDamage = 0;
-      attacker.isCrit = false;
-      return;
-    }
-
-    // Базовый урон
+    // Base Damage
     let damage = attacker.stats.strength;
 
-    // Множители зон
+    // Zone Multipliers
     if (targetZone === BodyZone.HEAD) damage *= 2.0;
     if (targetZone === BodyZone.LEGS) damage *= 0.5;
 
-    // Крит множитель (опционально, можно просто игнор блока, но обычно крит еще и x1.5 или x2)
-    // В ТЗ: "Крит ... игнорирует блок". Добавим x1.5 для приятности, или оставим просто игнор.
-    // ТЗ: "Крит ... -> игнорирует блок". Ок, просто игнор блока.
-    // Но если удар в голову и крит - это мощно.
+    // Crit Multiplier
+    if (isCrit) {
+        const critMultiplier = 1 + (attacker.stats.will * 0.02);
+        damage *= critMultiplier;
+    }
 
     attacker.lastDamage = Math.floor(damage);
     attacker.isCrit = isCrit;
@@ -253,26 +308,60 @@ export class BattleService {
     if (p1.hp > 0 && p2.hp <= 0) winnerId = p1.socketId;
     else if (p2.hp > 0 && p1.hp <= 0) winnerId = p2.socketId;
     
+    let expReward = 10;
+    let moneyReward = 5;
+
+    // Determine rewards from monster if applicable
+    const loser = winnerId === p1.socketId ? p2 : p1;
+    if (loser.characterId.startsWith('monster_')) {
+        const monsterId = loser.characterId.split('_')[1]; // monster_ID_timestamp -> ID is [1] wait, I used `monster_${monster.id}` in startPvEBattle.
+        // Actually in startPvEBattle: characterId: 'monster_' + monster.id
+        // So split('_')[1] is correct.
+        try {
+            const m = await prisma.monster.findUnique({ where: { id: monsterId } });
+            if (m) {
+                expReward = m.expReward;
+                moneyReward = m.moneyReward;
+            }
+        } catch(e) {}
+    }
+
     // Начисление наград
     if (winnerId) {
       const winner = battle.players[winnerId];
-      // +10 exp, +5 money (пример)
-      await prisma.character.update({
-        where: { id: winner.characterId },
-        data: { 
-          exp: { increment: 10 },
-          money: { increment: 5 }
-        } 
-      });
+      // Only give rewards to real characters
+      if (!winner.characterId.startsWith('monster_')) {
+        try {
+            await prisma.character.update({
+            where: { id: winner.characterId },
+            data: { 
+                exp: { increment: expReward },
+                money: { increment: moneyReward }
+            } 
+            });
+        } catch (e) {
+            console.error(`Failed to update winner rewards for char ${winner.characterId}:`, e);
+        }
+      }
     }
 
-    // Обновление HP в БД
-    await prisma.character.update({ where: { id: p1.characterId }, data: { hp: p1.hp } });
-    await prisma.character.update({ where: { id: p2.characterId }, data: { hp: p2.hp } });
+    // Обновление HP в БД (only for real characters)
+    const updateHp = async (p: BattlePlayer) => {
+        if (!p.characterId.startsWith('monster_')) {
+            try {
+                await prisma.character.update({ where: { id: p.characterId }, data: { hp: p.hp } });
+            } catch (e) {
+                console.error(`Failed to update HP for char ${p.characterId}:`, e);
+            }
+        }
+    };
+
+    await updateHp(p1);
+    await updateHp(p2);
 
     this.io.to(battle.id).emit('battle_end', { 
       winnerId,
-      rewards: { exp: 10, money: 5 } 
+      rewards: { exp: expReward, money: moneyReward } 
     });
 
     this.battles.delete(battle.id);

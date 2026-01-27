@@ -10,6 +10,7 @@ export const characterApi = {
   getCharacter: (id: string) => api.get(`/character/${id}`),
   createCharacter: (nickname: string, faction: string = 'neutral', userId?: string) => 
     api.post('/character', { nickname, faction, userId }),
+  move: (id: string, destination: string) => api.post(`/character/${id}/move`, { destination }),
   changeAlignment: (id: string, newAlignment: string) => api.post(`/character/${id}/alignment`, { newAlignment }),
   equipItem: (id: string, itemId: string, slotId?: string) => api.post(`/character/${id}/equip`, { itemId, slotId }),
   unequipItem: (id: string, slotId: string) => api.post(`/character/${id}/unequip`, { slotId }),
@@ -18,4 +19,9 @@ export const characterApi = {
 export const shopApi = {
   getDailyItems: (characterId: string) => api.get(`/shop/daily`, { params: { characterId } }),
   buyItem: (characterId: string, itemId: string) => api.post('/shop/buy', { characterId, itemId }),
+};
+
+export const zoneApi = {
+  searchMonster: (zoneId: string, playerLevel: number) => api.get(`/zones/${zoneId}/search`, { params: { playerLevel } }),
+  getZoneInfo: (zoneId: string) => api.get(`/zones/${zoneId}`),
 };

@@ -45,7 +45,7 @@ export const ZONES: Record<string, Zone> = {
     id: 'z1',
     name: 'Заброшенная ТЭЦ',
     description: 'Старая теплоэлектроцентраль, захваченная мутантами и мародерами.',
-    imagePath: '/assets/maps/zones/z1.jpg',
+    imagePath: '/assets/maps/zones/z1.png',
     monsters: ['betonozhil', 'krysoed', 'glot-tolpy', 'muskorol'],
     connectedTo: ['nova-chimera', 'z2']
   },
@@ -53,7 +53,7 @@ export const ZONES: Record<string, Zone> = {
     id: 'z2',
     name: 'Мутантский лес',
     description: 'Лес, где флора и фауна мутировали под воздействием химикатов.',
-    imagePath: '/assets/maps/zones/z2.jpg',
+    imagePath: '/assets/maps/zones/z2.png',
     monsters: ['shyp-liana', 'spore-cloud', 'root-walker', 'acid-fly'],
     connectedTo: ['z1', 'rad-city']
   },
@@ -63,7 +63,7 @@ export const ZONES: Record<string, Zone> = {
     id: 'z3',
     name: 'Радиоактивный каньон',
     description: 'Глубокий разлом, светящийся от радиации. Обитель опасных тварей.',
-    imagePath: '/assets/maps/zones/z3.jpg',
+    imagePath: '/assets/maps/zones/z3.png',
     monsters: ['rad-scorpion', 'glowing-ghoul', 'dust-devil', 'uranium-golem'],
     connectedTo: ['rad-city', 'z4']
   },
@@ -71,7 +71,7 @@ export const ZONES: Record<string, Zone> = {
     id: 'z4',
     name: 'Цифровые руины',
     description: 'Остатки древних серверов, где реальность смешивается с цифрой.',
-    imagePath: '/assets/maps/zones/z4.jpg',
+    imagePath: '/assets/maps/zones/z4.png',
     monsters: ['glitch-specter', 'data-leech', 'firewall-bot', 'logic-bomb'],
     connectedTo: ['z3', 'echo-quarter']
   },
@@ -81,7 +81,7 @@ export const ZONES: Record<string, Zone> = {
     id: 'z5',
     name: 'Подземелье данных',
     description: 'Лабиринт подземных коммуникаций, где хранятся забытые секреты.',
-    imagePath: '/assets/maps/zones/z5.jpg',
+    imagePath: '/assets/maps/zones/z5.png',
     monsters: ['byte-spider', 'corrupted-node', 'encryptor', 'zero-phantom'],
     connectedTo: ['echo-quarter', 'z6']
   },
@@ -89,7 +89,7 @@ export const ZONES: Record<string, Zone> = {
     id: 'z6',
     name: 'Пустошь шепотов',
     description: 'Пустынная местность, где ветер доносит голоса погибших.',
-    imagePath: '/assets/maps/zones/z6.jpg',
+    imagePath: '/assets/maps/zones/z6.png',
     monsters: ['echo-stalker', 'mirage-beast', 'void-walker', 'whisper-lord'],
     connectedTo: ['z5', 'nova-chimera']
   }
