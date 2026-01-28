@@ -1,8 +1,13 @@
 import { Server, Socket } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import { BattleState, BattlePlayer, BodyZone, PlayerMove } from '../types/battle';
+import { WeaponService } from './WeaponService';
+import { EconomyService } from './EconomyService';
+import { InventoryItem } from '../types/economy';
 
 const prisma = new PrismaClient();
+const weaponService = new WeaponService();
+const economyService = new EconomyService();
 
 export class BattleService {
   private battles: Map<string, BattleState> = new Map();
@@ -16,9 +21,42 @@ export class BattleService {
 
   // Создание или присоединение к бою
   public async joinBattle(socket: Socket, characterId: string) {
-    // ... existing join logic (PVP or whatever)
-    // For now, let's keep it as is, but we will add startPvEBattle separately
-    this.startPvEBattle(socket, characterId, 'random'); // This is not right. User calls joinBattle for PvP usually.
+    try {
+      const character = await prisma.character.findUnique({ where: { id: characterId } });
+      if (!character) return socket.emit('error', 'Character not found');
+
+      // Проверка на реконнект
+      const existingBattleId = this.findBattleByCharacterId(characterId);
+      if (existingBattleId) {
+        const battle = this.battles.get(existingBattleId);
+        if (battle) {
+          this.reconnectPlayer(socket, battle, characterId);
+          return;
+        }
+      }
+
+      // Поиск ожидающего боя
+      let battle = this.findWaitingBattle();
+      
+      if (!battle) {
+        // Создаем новый бой
+        battle = this.createBattle();
+      }
+
+      // Добавляем игрока
+      this.addPlayerToBattle(socket, battle, character);
+      
+      // Если 2 игрока - старт
+      if (Object.keys(battle.players).length === 2) {
+        this.startBattle(battle);
+      } else {
+        socket.emit('battle_join', { battleId: battle.id, state: battle });
+      }
+
+    } catch (error) {
+      console.error('Join battle error:', error);
+      socket.emit('error', 'Internal server error');
+    }
   }
 
   public async startPvEBattle(socket: Socket, characterId: string, monsterId: string, monsterLevel?: number) {
@@ -37,21 +75,37 @@ export class BattleService {
       }
 
       // Находим монстра
-      const monster = await prisma.monster.findUnique({ where: { id: monsterId } });
+      let monster;
+      if (monsterId === 'random') {
+        const count = await prisma.monster.count();
+        if (count === 0) return socket.emit('error', 'No monsters found in world');
+        const skip = Math.floor(Math.random() * count);
+        monster = await prisma.monster.findFirst({ skip });
+      } else {
+        monster = await prisma.monster.findUnique({ where: { id: monsterId } });
+      }
+
       if (!monster) return socket.emit('error', 'Monster not found');
 
       // Scaling Logic
+      let targetLevel = monsterLevel;
+      if (!targetLevel) {
+          // Auto-scale to player level if not specified (e.g. random battle)
+          const variation = Math.floor(Math.random() * 4) - 1; // -1 to +2
+          targetLevel = Math.max(1, character.level + variation);
+      }
+
       let scaledMonster = { ...monster };
-      if (monsterLevel && monsterLevel !== monster.level) {
-         const multiplier = monsterLevel / Math.max(1, monster.level);
-         scaledMonster.level = monsterLevel;
-         scaledMonster.hp = Math.floor(monster.hp * multiplier);
-         scaledMonster.maxHp = Math.floor(monster.maxHp * multiplier);
-         scaledMonster.strength = Math.floor(monster.strength * multiplier);
-         scaledMonster.agility = Math.floor(monster.agility * multiplier);
-         scaledMonster.intuition = Math.floor(monster.intuition * multiplier);
-         scaledMonster.will = Math.floor(monster.will * multiplier);
-         scaledMonster.constitution = Math.floor(monster.constitution * multiplier);
+      if (targetLevel !== monster.level) {
+         const multiplier = targetLevel / Math.max(1, monster.level);
+         scaledMonster.level = targetLevel;
+         scaledMonster.hp = Math.max(1, Math.floor(monster.hp * multiplier));
+         scaledMonster.maxHp = Math.max(1, Math.floor(monster.maxHp * multiplier));
+         scaledMonster.strength = Math.max(1, Math.floor(monster.strength * multiplier));
+         scaledMonster.agility = Math.max(1, Math.floor(monster.agility * multiplier));
+         scaledMonster.intuition = Math.max(1, Math.floor(monster.intuition * multiplier));
+         scaledMonster.will = Math.max(1, Math.floor(monster.will * multiplier));
+         scaledMonster.constitution = Math.max(1, Math.floor(monster.constitution * multiplier));
          // Rewards handled in endBattle logic usually, but let's assume they are stored on the bot or recalculated
       }
 
@@ -62,7 +116,7 @@ export class BattleService {
       this.addPlayerToBattle(socket, battle, character);
       
       // Добавляем монстра (как бота)
-      const botId = `monster_${monster.id}_${Date.now()}`;
+      const botId = `bot_monster_${monster.id}_${Date.now()}`;
       const bot: BattlePlayer = {
         socketId: botId,
         characterId: 'monster_' + monster.id, // Marker for monster
@@ -136,6 +190,19 @@ export class BattleService {
   }
 
   private addPlayerToBattle(socket: Socket, battle: BattleState, character: any) {
+    let weaponInstanceId: string | undefined;
+    
+    try {
+        const equipment = JSON.parse(character.equipment || '{}');
+        // Assume 'mainHand' or 'weapon' slot
+        const weapon = equipment.mainHand || equipment.weapon;
+        if (weapon && weapon.instanceId) {
+            weaponInstanceId = weapon.instanceId;
+        }
+    } catch (e) {
+        console.error('Failed to parse equipment for battle', e);
+    }
+
     const player: BattlePlayer = {
       socketId: socket.id,
       characterId: character.id,
@@ -151,7 +218,8 @@ export class BattleService {
         constitution: character.constitution
       },
       lastDamage: 0,
-      isCrit: false
+      isCrit: false,
+      weaponInstanceId
     };
 
     battle.players[socket.id] = player;
@@ -199,8 +267,8 @@ export class BattleService {
     
     this.io.to(battle.id).emit('battle_state', battle);
     
-    // Таймер раунда (30 сек)
-    setTimeout(() => this.checkRoundTimeout(battle.id, battle.round), 30000);
+    // Таймер раунда отключен по требованию (30 сек -> infinity)
+    // setTimeout(() => this.checkRoundTimeout(battle.id, battle.round), 30000);
   }
 
   private resolveRound(battle: BattleState) {
@@ -252,7 +320,7 @@ export class BattleService {
       battle.round++;
       battle.timerStart = Date.now();
       this.io.to(battle.id).emit('battle_state', battle);
-      setTimeout(() => this.checkRoundTimeout(battle.id, battle.round), 30000);
+      // setTimeout(() => this.checkRoundTimeout(battle.id, battle.round), 30000);
     }
   }
 
@@ -333,31 +401,39 @@ export class BattleService {
       if (!winner.characterId.startsWith('monster_')) {
         try {
             await prisma.character.update({
-            where: { id: winner.characterId },
-            data: { 
-                exp: { increment: expReward },
-                money: { increment: moneyReward }
-            } 
+              where: { id: winner.characterId },
+              data: { 
+                  exp: { increment: expReward },
+                  // money: { increment: moneyReward } // Legacy
+              } 
             });
+            // Add FRG
+            await economyService.addFrg(winner.characterId, moneyReward, 'Battle Reward');
         } catch (e) {
             console.error(`Failed to update winner rewards for char ${winner.characterId}:`, e);
         }
       }
     }
 
-    // Обновление HP в БД (only for real characters)
-    const updateHp = async (p: BattlePlayer) => {
+    // Обновление HP в БД (only for real characters) и Durability
+    const updateStats = async (p: BattlePlayer) => {
         if (!p.characterId.startsWith('monster_')) {
             try {
+                // Update HP
                 await prisma.character.update({ where: { id: p.characterId }, data: { hp: p.hp } });
+                
+                // Reduce Durability
+                if (p.weaponInstanceId) {
+                    await weaponService.reduceDurability(p.characterId, p.weaponInstanceId, 1);
+                }
             } catch (e) {
-                console.error(`Failed to update HP for char ${p.characterId}:`, e);
+                console.error(`Failed to update stats for char ${p.characterId}:`, e);
             }
         }
     };
 
-    await updateHp(p1);
-    await updateHp(p2);
+    await updateStats(p1);
+    await updateStats(p2);
 
     this.io.to(battle.id).emit('battle_end', { 
       winnerId,

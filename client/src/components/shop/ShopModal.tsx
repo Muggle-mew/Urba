@@ -8,17 +8,17 @@ import type { CityId } from '../../store/useCharacterStore';
 import clsx from 'clsx';
 
 const VENDOR_CONFIG: Record<CityId, { name: string; image: string; greeting: string }> = {
-  'nova-chimera': {
+  'verdis': {
     name: 'Био-Торговец',
     image: '/assets/vendors/bio-merchant.png',
     greeting: 'Привет, путник. Сегодня в наличии — только лучшее. Выбирай быстро: завтра всё исчезнет.'
   },
-  'rad-city': {
+  'ash': {
     name: 'Сталкер',
     image: '/assets/vendors/stalker-merchant.png',
     greeting: 'Не фони. Есть пара чистых стволов и комбезов. Платишь фрагментами, лишних вопросов не задаешь.'
   },
-  'echo-quarter': {
+  'nima': {
     name: 'Цифровой Агент',
     image: '/assets/vendors/holo-agent.png',
     greeting: 'Транзакция инициирована. Доступ к закрытому каталогу протоколов защиты и устранения предоставлен.'
@@ -33,9 +33,12 @@ export const ShopModal: React.FC = () => {
 
   // Reset view when closed
   useEffect(() => {
-    if (isOpen) {
-      setShowCatalog(false);
-      setSelectedItem(null);
+    if (!isOpen) {
+      const timer = setTimeout(() => {
+        setShowCatalog(false);
+        setSelectedItem(null);
+      }, 300); // Wait for animation to finish
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 

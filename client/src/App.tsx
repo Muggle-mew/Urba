@@ -4,6 +4,7 @@ import { useBattleStore } from './store/useBattleStore';
 import { BattleScreen } from './components/BattleScreen';
 import { ShopModal } from './components/shop/ShopModal';
 import { CharacterProfileModal } from './components/profile/CharacterProfileModal';
+import { QuestsModal } from './components/quests/QuestsModal';
 import { GameLayout } from './components/layout/GameLayout';
 import { CityScreen } from './components/city/CityScreen';
 import { ZoneScreen } from './components/zone/ZoneScreen';
@@ -87,6 +88,7 @@ function App() {
 
       {/* Overlays */}
       <CharacterProfileModal />
+      <QuestsModal />
       <ShopModal />
       
     </div>

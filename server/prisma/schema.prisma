@@ -46,13 +46,44 @@ model Character {
   faction      String      @default("neutral")
   inventory    String      @default("[]") // JSON string of items
   equipment    String      @default("{}") // JSON string of equipped items { slot: item }
-  location     String      @default("{\"city\": \"nova-chimera\", \"isTraveling\": false}") // JSON string of location
+  location     String      @default("{\"city\": \"verdis\", \"isTraveling\": false}") // JSON string of location
   money        Int         @default(0)
+  frg          Int         @default(0)
   
   dailyShops   DailyShop[]
+  quests       Quest[]
+  achievements Achievement[]
+  activities   PassiveActivity[]
 
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+}
+
+model Quest {
+  id          String   @id @default(uuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id])
+  type        String   // "DAILY" | "WEEKLY"
+  category    String   @default("general") // COMBAT, PVE, PVP, BOSS, ZONES, CRAFT, SOCIAL
+  description String   @default("")
+  frgReward   Int      @default(0)
+  content     String   // Description from the constant list (Legacy, keeping for now)
+  progress    Int      @default(0)
+  target      Int      @default(1)
+  isCompleted Boolean  @default(false)
+  isClaimed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime // End of day or week
+}
+
+model Achievement {
+  id            String   @id @default(uuid())
+  characterId   String
+  character     Character @relation(fields: [characterId], references: [id])
+  achievementId String   // The string ID like "first_blood"
+  unlockedAt    DateTime @default(now())
+  
+  @@unique([characterId, achievementId])
 }
 
 model Item {
@@ -63,6 +94,33 @@ model Item {
   stats     String   // JSON string of stats (e.g., {"damage": 10})
   price     Int
   image     String?
+}
+
+model Weapon {
+  id               String  @id @default(uuid())
+  name             String
+  type             String  // Blade, Pistol, Rifle, Shotgun, SMG, Heavy, Bio, Radiation, Cyber, Relic
+  levelRequirement Int
+  damageMin        Int
+  damageMax        Int
+  critChance       Float
+  critMultiplier   Float
+  accuracy         Int
+  durability       Int     // Initial/Max durability
+  maxDurability    Int
+  priceFRG         Int
+  specialEffect    String?
+}
+
+model PassiveActivity {
+  id          String    @id @default(uuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id])
+  type        String    // HUNT, SCOUT, GUARD
+  startTime   DateTime  @default(now())
+  duration    Int       // in minutes
+  status      String    // STARTED, COMPLETED, CLAIMED
+  rewardFrg   Int
 }
 
 model DailyShop {

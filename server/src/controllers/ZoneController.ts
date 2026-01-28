@@ -21,8 +21,8 @@ export const searchMonster = async (req: Request, res: Response) => {
     // Pick random
     const baseMonster = monsters[Math.floor(Math.random() * monsters.length)];
 
-    // Calculate target level: playerLevel +/- 3, min 1
-    const variation = Math.floor(Math.random() * 7) - 3; // -3 to +3
+    // Calculate target level: playerLevel -1 to +2, min 1
+    const variation = Math.floor(Math.random() * 4) - 1; // -1 to +2
     const targetLevel = Math.max(1, playerLevel + variation);
 
     // Scale stats (assuming linear scaling from base level)

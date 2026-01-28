@@ -71,11 +71,13 @@ export const useBattleStore = create<BattleState>((set, get) => ({
   
   toggleBlock: (part) => {
     const { selectedBlocks } = get();
-    if (selectedBlocks.includes(part)) {
-      set({ selectedBlocks: selectedBlocks.filter(p => p !== part) });
+    const currentBlocks = selectedBlocks || []; // Safety check
+    
+    if (currentBlocks.includes(part)) {
+      set({ selectedBlocks: currentBlocks.filter(p => p !== part) });
     } else {
-      if (selectedBlocks.length < 2) {
-        set({ selectedBlocks: [...selectedBlocks, part] });
+      if (currentBlocks.length < 2) {
+        set({ selectedBlocks: [...currentBlocks, part] });
       }
     }
   },
@@ -96,46 +98,24 @@ export const useBattleStore = create<BattleState>((set, get) => ({
     socket.off('battle_end');
 
     socket.on('battle_state', (state: any) => {
-      const playerEntry = Object.entries(state.players).find(
-        ([_, p]: [string, any]) => p.characterId === characterId
-      );
-      
-      const opponentEntry = Object.entries(state.players).find(
-        ([_, p]: [string, any]) => p.characterId !== characterId
-      );
+      const pData = Object.values(state.players).find(
+        (p: any) => p.characterId === characterId
+      ) as any;
 
-      if (playerEntry) {
-        const [_, pData] = playerEntry;
-        const [__, oData] = opponentEntry || [null, null];
+      const oData = Object.values(state.players).find(
+        (p: any) => p.characterId !== characterId
+      ) as any;
 
-        set({
-          battleId: state.id,
-          status: state.status,
-          round: state.round,
-          timeLeft: Math.max(0, 30 - Math.floor((Date.now() - state.timerStart) / 1000)),
-          player: {
-            id: pData.characterId,
-            name: pData.name,
-            hp: pData.hp,
-            maxHp: pData.maxHp,
-            level: pData.level || 1,
-            damage: pData.lastDamage,
-            isCrit: pData.isCrit,
-            avatarUrl: pData.avatar
-          },
-          opponent: oData ? {
-            id: oData.characterId,
-            name: oData.name,
-            hp: oData.hp,
-            maxHp: oData.maxHp,
-            level: oData.level || 1,
-            damage: oData.lastDamage,
-            isCrit: oData.isCrit,
-            avatarUrl: oData.avatar
-          } : null,
-          logs: state.logs
-        });
-      }
+      set({ 
+        battleId: state.id,
+        player: pData ? { ...pData, avatarUrl: pData.avatar } : null,
+        opponent: oData ? { ...oData, avatarUrl: oData.avatar } : null,
+        round: state.round,
+        logs: state.logs,
+        status: state.status,
+        timeLeft: Math.max(0, 30 - Math.floor((Date.now() - state.timerStart) / 1000)),
+        isReady: !!pData?.currentMove
+      });
     });
 
     socket.on('battle_result', (result: any) => {

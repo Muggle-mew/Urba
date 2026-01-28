@@ -25,3 +25,8 @@ export const zoneApi = {
   searchMonster: (zoneId: string, playerLevel: number) => api.get(`/zones/${zoneId}/search`, { params: { playerLevel } }),
   getZoneInfo: (zoneId: string) => api.get(`/zones/${zoneId}`),
 };
+
+export const questApi = {
+  getQuests: (characterId: string) => api.get(`/quest/${characterId}/quests`),
+  getAchievements: (characterId: string) => api.get(`/quest/${characterId}/achievements`),
+};

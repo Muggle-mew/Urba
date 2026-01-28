@@ -11,11 +11,11 @@ interface SewersModalProps {
 
 export const SewersModal: React.FC<SewersModalProps> = ({ isOpen, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const character = useCharacterStore(state => state.character);
-  const socket = useBattleStore(state => state.socket);
+  const { character } = useCharacterStore();
+  const { startPvEBattle } = useBattleStore();
 
   const handleSoloClick = async () => {
-    if (!character || !socket || isLoading) return;
+    if (!character || isLoading) return;
     setIsLoading(true);
     try {
       // Search in 'sewers_solo' zone
@@ -23,11 +23,7 @@ export const SewersModal: React.FC<SewersModalProps> = ({ isOpen, onClose }) => 
       const monster = res.data.monster;
       
       // Start battle
-      socket.emit('battle_start_pve', { 
-        characterId: character.id, 
-        monsterId: monster.id,
-        monsterLevel: monster.level
-      });
+      startPvEBattle(character.id, monster.id, monster.level);
       
       // Close modal (App will switch screen automatically)
       onClose();

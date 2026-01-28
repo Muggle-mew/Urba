@@ -24,6 +24,10 @@ export const BattleScreen: React.FC = () => {
   const { character, fetchCharacter } = useCharacterStore();
   const { addNotification } = useNotificationStore();
 
+  // Safety checks for possibly null state
+  const safeSelectedBlocks = selectedBlocks || [];
+  const safeLogs = logs || [];
+
   useEffect(() => {
     if (status === 'finished') {
       if (winnerId === player?.id) {
@@ -80,131 +84,147 @@ export const BattleScreen: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 text-zinc-200 p-2 md:p-4 overflow-hidden">
+    <div className="flex flex-col h-full bg-zinc-950 text-zinc-200 overflow-hidden">
       
-      {/* Header / Timer */}
-      <div className="flex justify-between items-center mb-4 shrink-0">
-        <div className="font-mono text-sm text-zinc-500">БОЙ #{useBattleStore.getState().battleId?.slice(0, 8)}</div>
-        <div className={clsx(
-          "flex items-center gap-2 text-2xl font-mono font-bold transition-colors",
-          timeLeft < 10 ? "text-red-500 animate-pulse" : "text-emerald-400"
-        )}>
-          <Timer className="w-6 h-6" />
-          {timeLeft}s
-        </div>
-        <div className="font-mono text-sm text-zinc-500">РАУНД {round}</div>
-      </div>
-
-      {/* Fighters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 shrink-0">
-        {/* Player */}
-        <FighterCard fighter={player} isPlayer />
+      {/* Main 3-Column Layout */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-[22%_1fr_22%] min-h-0 divide-x divide-zinc-800/50">
         
-        {/* Opponent */}
-        <FighterCard fighter={opponent} isPlayer={false} />
-      </div>
+        {/* Left: Player */}
+        <div className="order-2 md:order-1 flex items-center justify-center bg-zinc-900/30 h-full relative">
+           <div className="absolute inset-0 flex flex-col items-center justify-center">
+             <FighterCard fighter={player} isPlayer round={round} />
+           </div>
+        </div>
 
-      {/* Controls */}
-      <div className="flex-1 min-h-0 overflow-y-auto mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
-          
-          {/* Attack Selector */}
-          <div className="bg-zinc-900/50 p-4 rounded-lg border border-red-500/20 overflow-y-auto">
-            <h3 className="flex items-center gap-2 text-red-400 font-bold mb-2 uppercase tracking-wider text-sm sticky top-0 bg-zinc-900/95 py-2 z-10">
-              <Sword className="w-4 h-4" /> Атака (1)
-            </h3>
-            <div className="space-y-1">
-              {BODY_PARTS.map((part) => (
-                <button
-                  key={part.id}
-                  onClick={() => !isReady && setAttack(part.id)}
-                  disabled={isReady}
+        {/* Center: Controls & Logs */}
+        <div className="order-1 md:order-2 flex flex-col h-full min-h-0 bg-zinc-950/50">
+           
+           {/* Header / Timer (Moved to Center) */}
+           <div className="flex justify-between items-center p-4 shrink-0 border-b border-zinc-800/50">
+             <div className="font-mono text-sm text-zinc-500">БОЙ #{useBattleStore.getState().battleId?.slice(0, 8)}</div>
+             <div className={clsx(
+               "flex items-center gap-2 text-2xl font-mono font-bold transition-colors",
+               timeLeft < 10 ? "text-red-500 animate-pulse" : "text-emerald-400"
+             )}>
+               <Timer className="w-6 h-6" />
+               {timeLeft}s
+             </div>
+             <div className="font-mono text-sm text-zinc-500">РАУНД {round}</div>
+           </div>
+
+           {/* Central Control Area */}
+           <div className="flex flex-col items-center justify-center gap-4 p-4 shrink-0">
+              
+              {/* Attack & Block Selectors Container */}
+              <div className="flex items-start justify-center gap-2">
+                  {/* Attack Selector */}
+                  <div className="w-[12vw] min-w-[120px] max-h-[30vh] bg-zinc-900/50 p-1.5 rounded-lg border border-red-500/20 flex flex-col overflow-hidden">
+                    <h3 className="flex items-center justify-center gap-1 text-red-400 font-bold mb-1 uppercase tracking-wider text-[10px] bg-zinc-900/95 py-0.5">
+                      <Sword className="w-3 h-3" /> Атака
+                    </h3>
+                    <div className="space-y-0.5 overflow-y-auto custom-scrollbar">
+                      {BODY_PARTS.map((part) => (
+                        <button
+                          key={part.id}
+                          onClick={() => !isReady && setAttack(part.id)}
+                          disabled={isReady}
+                          className={clsx(
+                            "w-full px-2 py-1.5 rounded text-left transition-all flex justify-between items-center text-[10px]",
+                            selectedAttack === part.id
+                              ? "bg-red-500/20 border border-red-500 text-red-400"
+                              : "bg-zinc-800 hover:bg-zinc-700 border border-transparent"
+                          )}
+                        >
+                          {part.label}
+                          {selectedAttack === part.id && <div className="w-1 h-1 rounded-full bg-red-500" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Block Selector */}
+                  <div className="w-[12vw] min-w-[120px] max-h-[30vh] bg-zinc-900/50 p-1.5 rounded-lg border border-blue-500/20 flex flex-col overflow-hidden">
+                    <h3 className="flex items-center justify-center gap-1 text-blue-400 font-bold mb-1 uppercase tracking-wider text-[10px] bg-zinc-900/95 py-0.5">
+                      <Shield className="w-3 h-3" /> Блок
+                    </h3>
+                    <div className="space-y-0.5 overflow-y-auto custom-scrollbar">
+                      {BODY_PARTS.map((part) => {
+                        const isSelected = safeSelectedBlocks.includes(part.id);
+                        return (
+                          <button
+                            key={part.id}
+                            onClick={() => !isReady && toggleBlock(part.id)}
+                            disabled={isReady || (!isSelected && safeSelectedBlocks.length >= 2)}
+                            className={clsx(
+                              "w-full px-2 py-1.5 rounded text-left transition-all flex justify-between items-center text-[10px]",
+                              isSelected
+                                ? "bg-blue-500/20 border border-blue-500 text-blue-400"
+                                : "bg-zinc-800 hover:bg-zinc-700 border border-transparent disabled:opacity-50"
+                            )}
+                          >
+                            {part.label}
+                            {isSelected && <div className="w-1 h-1 rounded-full bg-blue-500" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="shrink-0 flex flex-col items-center gap-1 w-[25vw] min-w-[200px]">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleCommit}
+                  disabled={!selectedAttack || safeSelectedBlocks.length !== 2 || isReady}
                   className={clsx(
-                    "w-full p-2 rounded text-left transition-all flex justify-between items-center text-sm",
-                    selectedAttack === part.id
-                      ? "bg-red-500/20 border border-red-500 text-red-400"
-                      : "bg-zinc-800 hover:bg-zinc-700 border border-transparent"
+                    "w-full py-2 rounded-lg font-bold text-sm uppercase tracking-widest shadow-lg transition-all",
+                    isReady
+                      ? "bg-zinc-800 text-zinc-500 cursor-wait"
+                      : (!selectedAttack || safeSelectedBlocks.length !== 2)
+                        ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                        : "bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-red-900/50 hover:shadow-red-900/80"
                   )}
                 >
-                  {part.label}
-                  {selectedAttack === part.id && <div className="w-1.5 h-1.5 rounded-full bg-red-500" />}
-                </button>
-              ))}
-            </div>
-          </div>
+                  {isReady ? 'Ожидание...' : 'В БОЙ!'}
+                </motion.button>
+              </div>
 
-          {/* Action Button */}
-          <div className="flex flex-col justify-center items-center gap-4 py-2">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleCommit}
-              disabled={!selectedAttack || selectedBlocks.length !== 2 || isReady}
-              className={clsx(
-                "w-full max-w-[200px] py-3 rounded-lg font-bold text-lg uppercase tracking-widest shadow-lg transition-all",
-                isReady
-                  ? "bg-zinc-800 text-zinc-500 cursor-wait"
-                  : (!selectedAttack || selectedBlocks.length !== 2)
-                    ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                    : "bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-red-900/50 hover:shadow-red-900/80"
-              )}
-            >
-              {isReady ? 'Ожидание...' : 'В БОЙ!'}
-            </motion.button>
-            
-            <div className="text-center text-xs text-zinc-500">
-              {isReady ? "Ожидаем ход противника" : "Выберите 1 атаку и 2 блока"}
-            </div>
-          </div>
+           </div>
 
-          {/* Block Selector */}
-          <div className="bg-zinc-900/50 p-4 rounded-lg border border-blue-500/20 overflow-y-auto">
-            <h3 className="flex items-center gap-2 text-blue-400 font-bold mb-2 uppercase tracking-wider text-sm sticky top-0 bg-zinc-900/95 py-2 z-10">
-              <Shield className="w-4 h-4" /> Блок (2)
-            </h3>
-            <div className="space-y-1">
-              {BODY_PARTS.map((part) => {
-                const isSelected = selectedBlocks.includes(part.id);
-                return (
-                  <button
-                    key={part.id}
-                    onClick={() => !isReady && toggleBlock(part.id)}
-                    disabled={isReady || (!isSelected && selectedBlocks.length >= 2)}
-                    className={clsx(
-                      "w-full p-2 rounded text-left transition-all flex justify-between items-center text-sm",
-                      isSelected
-                        ? "bg-blue-500/20 border border-blue-500 text-blue-400"
-                        : "bg-zinc-800 hover:bg-zinc-700 border border-transparent disabled:opacity-50"
-                    )}
-                  >
-                    {part.label}
-                    {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+           {/* Logs */}
+           <div className="h-48 shrink-0 bg-zinc-900 border-t border-zinc-800 p-4 overflow-y-auto font-mono text-xs">
+             {safeLogs.map((log, i) => (
+               <div key={i} className="mb-1 text-zinc-400 border-b border-zinc-800/50 pb-1 last:border-0">
+                 {log}
+               </div>
+             ))}
+             <div ref={logsEndRef} />
+           </div>
+
+           {/* Spacer to push logs up to the red line (approx middle) */}
+           <div className="flex-1 min-h-0" />
+
         </div>
-      </div>
 
-      {/* Logs */}
-      <div className="h-24 shrink-0 bg-zinc-900 rounded p-2 overflow-y-auto font-mono text-xs border border-zinc-800">
-        {logs.map((log, i) => (
-          <div key={i} className="mb-1 text-zinc-400 border-b border-zinc-800/50 pb-1 last:border-0">
-            {log}
-          </div>
-        ))}
-        <div ref={logsEndRef} />
+        {/* Right: Opponent */}
+        <div className="order-3 flex items-center justify-center bg-zinc-900/30 h-full relative">
+           <div className="absolute inset-0 flex flex-col items-center justify-center">
+             <FighterCard fighter={opponent} isPlayer={false} round={round} />
+           </div>
+        </div>
+
       </div>
     </div>
   );
 };
 
-const FighterCard: React.FC<{ fighter: any; isPlayer: boolean }> = ({ fighter, isPlayer }) => {
+const FighterCard: React.FC<{ fighter: any; isPlayer: boolean; round: number }> = ({ fighter, isPlayer, round }) => {
   if (!fighter) return <div className="h-64 bg-zinc-900 rounded animate-pulse" />;
 
   return (
-    <div className="relative flex justify-center py-2">
+    <div className="relative flex justify-center w-full h-full">
       <CharacterDoll 
         name={fighter.name}
         level={fighter.level}
@@ -221,7 +241,7 @@ const FighterCard: React.FC<{ fighter: any; isPlayer: boolean }> = ({ fighter, i
             initial={{ y: 0, opacity: 1, scale: 0.5 }}
             animate={{ y: -50, opacity: 0, scale: 1.5 }}
             exit={{ opacity: 0 }}
-            key={fighter.damage + Date.now()}
+            key={`${fighter.damage}-${round}`}
             className={clsx(
               "absolute top-1/4 left-1/2 -translate-x-1/2 font-bold text-4xl drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-50", 
               fighter.isCrit ? "text-yellow-400" : "text-red-500"

@@ -6,6 +6,8 @@ import dotenv from 'dotenv';
 import characterRoutes from './routes/characterRoutes';
 import shopRoutes from './routes/shopRoutes';
 import zoneRoutes from './routes/zoneRoutes';
+import questRoutes from './routes/questRoutes';
+import weaponRoutes from './routes/weaponRoutes';
 import { BattleService } from './services/BattleService';
 import { setupBattleHandlers } from './websocket/battleHandlers';
 
@@ -32,6 +34,8 @@ app.use(express.json());
 app.use('/api/character', characterRoutes);
 app.use('/api/shop', shopRoutes);
 app.use('/api/zone', zoneRoutes);
+app.use('/api/quest', questRoutes);
+app.use('/api/weapons', weaponRoutes);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

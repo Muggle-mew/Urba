@@ -35,7 +35,7 @@ export interface CharacterStats {
   will: number;
 }
 
-export type CityId = 'nova-chimera' | 'rad-city' | 'echo-quarter';
+export type CityId = 'verdis' | 'ash' | 'nima';
 export type ZoneId = 'z1' | 'z2' | 'z3' | 'z4' | 'z5' | 'z6';
 export type LocationId = CityId | ZoneId;
 
@@ -72,8 +72,11 @@ interface CharacterStore {
   character: CharacterProfile | null; // Renamed/Aliased
   isLoading: boolean;
   isOpen: boolean;
+  isQuestsOpen: boolean;
   openProfile: () => void;
   closeProfile: () => void;
+  openQuests: () => void;
+  closeQuests: () => void;
   startTravel: (destination: LocationId) => void;
   completeTravel: () => void;
   fetchCharacter: (id: string) => Promise<void>;
@@ -93,7 +96,7 @@ const DEFAULT_PROFILE: CharacterProfile = {
   fragments: 0,
   stats: { strength: 10, agility: 10, intuition: 10, constitution: 10, will: 10 },
   equipment: {},
-  location: { city: 'nova-chimera', isTraveling: false },
+  location: { city: 'verdis', isTraveling: false },
   inventory: []
 };
 
@@ -101,9 +104,12 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
   character: null,
   isLoading: false,
   isOpen: false,
+  isQuestsOpen: false,
   
   openProfile: () => set({ isOpen: true }),
   closeProfile: () => set({ isOpen: false }),
+  openQuests: () => set({ isQuestsOpen: true }),
+  closeQuests: () => set({ isQuestsOpen: false }),
   
   startTravel: (destination) => set((state) => {
     if (!state.character) return {};

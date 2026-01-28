@@ -3,14 +3,14 @@ import type { ReactNode } from 'react';
 import { ChatWidget } from '../chat/ChatWidget';
 import { PlayerListWidget } from '../chat/PlayerListWidget';
 import { useCharacterStore } from '../../store/useCharacterStore';
-import { User, Settings, Map, LogOut } from 'lucide-react';
+import { User, Settings, Map, LogOut, ScrollText, CircleDollarSign } from 'lucide-react';
 
 interface GameLayoutProps {
   children: ReactNode;
 }
 
 export const GameLayout: React.FC<GameLayoutProps> = ({ children }) => {
-  const { openProfile } = useCharacterStore();
+  const { openProfile, openQuests, character } = useCharacterStore();
   const [panelHeight, setPanelHeight] = useState(250); // Initial height in px
   const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef<number>(0);
@@ -75,18 +75,33 @@ export const GameLayout: React.FC<GameLayoutProps> = ({ children }) => {
           <div className="text-sm font-bold text-gray-300 hidden sm:block">
             Urba
             <span className="text-gray-600 mx-2">|</span>
-            <span className="text-terra-gold">Химер-Сити</span>
+            <span className="text-terra-gold">ВЕРДИС</span>
           </div>
         </div>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2 sm:gap-4">
+          
+          {/* Currency Display */}
+          <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-gray-900/50 border border-gray-700/50 rounded text-amber-400 text-xs font-medium mr-2 shadow-inner">
+            <CircleDollarSign size={14} />
+            <span>{character?.fragments || 0} FRG</span>
+          </div>
+
           <button 
             onClick={openProfile}
             className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded border border-gray-700 transition-colors text-sm font-medium group"
           >
             <User size={16} className="text-terra-gold group-hover:text-white transition-colors" />
             <span>Мой персонаж</span>
+          </button>
+
+          <button 
+            onClick={openQuests}
+            className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded border border-gray-700 transition-colors text-sm font-medium group"
+          >
+            <ScrollText size={16} className="text-terra-gold group-hover:text-white transition-colors" />
+            <span>Задания</span>
           </button>
           
           <div className="h-6 w-px bg-gray-700 mx-1" />

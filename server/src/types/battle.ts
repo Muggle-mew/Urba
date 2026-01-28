@@ -30,6 +30,7 @@ export interface BattlePlayer {
   isDodge?: boolean;
   avatar?: string;
   level?: number;
+  weaponInstanceId?: string;
 }
 
 export interface BattleState {

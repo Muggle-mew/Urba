@@ -23,7 +23,7 @@ CREATE TABLE "Character" (
     "faction" TEXT NOT NULL DEFAULT 'neutral',
     "inventory" TEXT NOT NULL DEFAULT '[]',
     "equipment" TEXT NOT NULL DEFAULT '{}',
-    "location" TEXT NOT NULL DEFAULT '{"city": "nova-chimera", "isTraveling": false}',
+    "location" TEXT NOT NULL DEFAULT '{"city": "verdis", "isTraveling": false}',
     "money" INTEGER NOT NULL DEFAULT 0,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,

@@ -12,33 +12,33 @@ import { motion, AnimatePresence } from 'framer-motion';
 // ... (existing comments)
 
 const CITIES: Record<CityId, { name: string; description: string; color: string; image: string; connectedTo: LocationId[] }> = {
-  'nova-chimera': {
-    name: 'Нова-Химера',
-    description: 'Город-организм. Высокие здания, покрытые светящимся мхом, пульсирующее Ядро в центре.',
+  'verdis': {
+    name: 'ВЕРДИС',
+    description: 'Город, который дышит. Его вены — улицы, его сердце — Ядро.',
     color: 'text-green-500',
-    image: '/images/cities/nova-chimera.png',
+    image: '/images/cities/verdis.png',
     connectedTo: ['z1', 'z6']
   },
-  'rad-city': {
-    name: 'Рад-Сити',
-    description: 'Затопленный радиацией постапокалиптический район. Ржавые небоскребы, зеленая дымка.',
+  'ash': {
+    name: 'АШ',
+    description: 'Здесь всё превращается в пепел. Даже надежда.',
     color: 'text-yellow-500',
-    image: '/images/cities/rad-city.png',
+    image: '/images/cities/ash.png',
     connectedTo: ['z2', 'z3']
   },
-  'echo-quarter': {
-    name: 'Эхо-Квартал',
-    description: 'Скрытый цифровой район из глитч-голограмм и потоков данных.',
+  'nima': {
+    name: 'НИМА',
+    description: 'Ты не входишь в Ниму. Ты подключаешься к ней.',
     color: 'text-blue-500',
-    image: '/images/cities/echo-quarter.png',
+    image: '/images/cities/nima.png',
     connectedTo: ['z4', 'z5']
   }
 };
 
 const LOCATION_NAMES: Record<string, string> = {
-  'nova-chimera': 'Нова-Химера',
-  'rad-city': 'Рад-Сити',
-  'echo-quarter': 'Эхо-Квартал',
+  'verdis': 'ВЕРДИС',
+  'ash': 'АШ',
+  'nima': 'НИМА',
   'z1': 'Заброшенная ТЭЦ',
   'z2': 'Мутантский лес',
   'z3': 'Радиоактивный каньон',

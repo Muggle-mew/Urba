@@ -9,9 +9,9 @@ import clsx from 'clsx';
 
 // Map zone IDs to readable names for navigation
 const LOCATION_NAMES: Record<string, string> = {
-  'nova-chimera': 'Нова-Химера',
-  'rad-city': 'Рад-Сити',
-  'echo-quarter': 'Эхо-Квартал',
+  'verdis': 'ВЕРДИС',
+  'ash': 'АШ',
+  'nima': 'НИМА',
   'z1': 'Заброшенная ТЭЦ',
   'z2': 'Мутантский лес',
   'z3': 'Радиоактивный каньон',
@@ -25,8 +25,8 @@ interface ZoneScreenProps {
 }
 
 export const ZoneScreen: React.FC<ZoneScreenProps> = ({ onNavigateToCombat }) => {
-  const { character, startTravel, completeTravel } = useCharacterStore();
-  const { currentZone, foundMonster, isLoading, error, enterZone, searchMonster, leaveZone } = useZoneStore();
+  const { character, completeTravel } = useCharacterStore();
+  const { currentZone, foundMonster, isLoading, enterZone, searchMonster, leaveZone } = useZoneStore();
   
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [showTravelModal, setShowTravelModal] = useState(false);
@@ -37,7 +37,7 @@ export const ZoneScreen: React.FC<ZoneScreenProps> = ({ onNavigateToCombat }) =>
       enterZone(character.location.city);
     }
     return () => leaveZone();
-  }, [character?.location.city]);
+  }, [character?.location.city, enterZone, leaveZone]);
 
   // Handle travel timer
   useEffect(() => {
@@ -176,7 +176,7 @@ export const ZoneScreen: React.FC<ZoneScreenProps> = ({ onNavigateToCombat }) =>
                   {/* Monster Image */}
                   <div className="flex-1 bg-black relative overflow-hidden group min-h-0">
                      <img 
-                      src={foundMonster.image.includes('/') ? `/assets/maps/${foundMonster.image}` : `/assets/maps/zones/monsters/${foundMonster.image}`} 
+                      src={foundMonster.image?.includes('/') ? `/assets/maps/${foundMonster.image}` : `/assets/maps/zones/monsters/${foundMonster.image || 'default.png'}`} 
                       alt={foundMonster.name}
                       className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-700"
                       onError={(e) => e.currentTarget.src = '/assets/monsters/default.png'} // Fallback

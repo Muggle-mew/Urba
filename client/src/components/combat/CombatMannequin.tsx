@@ -10,7 +10,7 @@ interface CombatMannequinProps {
 }
 
 export const CombatMannequin: React.FC<CombatMannequinProps> = ({ type, selectedParts, onToggle }) => {
-  const isSelected = (part: BodyPart) => selectedParts.includes(part);
+  const isSelected = (part: BodyPart) => (selectedParts || []).includes(part);
 
   const getFillColor = (part: BodyPart) => {
     if (isSelected(part)) {

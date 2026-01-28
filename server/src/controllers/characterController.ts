@@ -36,7 +36,7 @@ const formatCharacter = (char: any) => {
       constitution: char.constitution
     },
     equipment: safeParse(char.equipment, {}),
-    location: safeParse(char.location, { city: 'nova-chimera', isTraveling: false }),
+    location: safeParse(char.location, { city: 'verdis', isTraveling: false }),
     inventory: safeParse(char.inventory, [])
   };
 };
@@ -63,7 +63,7 @@ export const createCharacter = async (req: Request, res: Response) => {
         faction,
         inventory: "[]",
         equipment: "{}",
-        location: JSON.stringify({ city: 'nova-chimera', isTraveling: false })
+        location: JSON.stringify({ city: 'verdis', isTraveling: false })
       }
     });
 
@@ -113,7 +113,7 @@ export const moveCharacter = async (req: Request, res: Response) => {
     }
 
     // Parse current location to preserve other fields if any
-    const currentLocation = safeParse(character.location, { city: 'nova-chimera', isTraveling: false });
+    const currentLocation = safeParse(character.location, { city: 'verdis', isTraveling: false });
     
     const newLocation = {
       ...currentLocation,

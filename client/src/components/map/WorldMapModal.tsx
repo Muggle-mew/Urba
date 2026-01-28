@@ -16,22 +16,22 @@ interface MapNode {
 
 const MAP_NODES: MapNode[] = [
   // CITIES
-  { id: 'nova-chimera', name: 'Нова-Химера', x: 50, y: 15, type: 'city', connectedTo: ['z1', 'z6'] },
-  { id: 'rad-city', name: 'Рад-Сити', x: 90, y: 80, type: 'city', connectedTo: ['z2', 'z3'] },
-  { id: 'echo-quarter', name: 'Эхо-Квартал', x: 10, y: 80, type: 'city', connectedTo: ['z4', 'z5'] },
+  { id: 'verdis', name: 'ВЕРДИС', x: 50, y: 15, type: 'city', connectedTo: ['z1', 'z6'] },
+  { id: 'ash', name: 'АШ', x: 90, y: 80, type: 'city', connectedTo: ['z2', 'z3'] },
+  { id: 'nima', name: 'НИМА', x: 10, y: 80, type: 'city', connectedTo: ['z4', 'z5'] },
 
   // ZONES
-  // Path 1: Nova -> Rad
-  { id: 'z1', name: 'Заброшенная ТЭЦ', x: 65, y: 30, type: 'zone', connectedTo: ['nova-chimera', 'z2'] },
-  { id: 'z2', name: 'Мутантский лес', x: 80, y: 55, type: 'zone', connectedTo: ['z1', 'rad-city'] },
+  // Path 1: Verdis -> Ash
+  { id: 'z1', name: 'Заброшенная ТЭЦ', x: 65, y: 30, type: 'zone', connectedTo: ['verdis', 'z2'] },
+  { id: 'z2', name: 'Мутантский лес', x: 80, y: 55, type: 'zone', connectedTo: ['z1', 'ash'] },
 
-  // Path 2: Rad -> Echo
-  { id: 'z3', name: 'Радиоактивный каньон', x: 65, y: 80, type: 'zone', connectedTo: ['rad-city', 'z4'] },
-  { id: 'z4', name: 'Цифровые руины', x: 35, y: 80, type: 'zone', connectedTo: ['z3', 'echo-quarter'] },
+  // Path 2: Ash -> Nima
+  { id: 'z3', name: 'Радиоактивный каньон', x: 65, y: 80, type: 'zone', connectedTo: ['ash', 'z4'] },
+  { id: 'z4', name: 'Цифровые руины', x: 35, y: 80, type: 'zone', connectedTo: ['z3', 'nima'] },
 
-  // Path 3: Echo -> Nova
-  { id: 'z5', name: 'Подземелье данных', x: 20, y: 55, type: 'zone', connectedTo: ['echo-quarter', 'z6'] },
-  { id: 'z6', name: 'Пустошь шепотов', x: 35, y: 30, type: 'zone', connectedTo: ['z5', 'nova-chimera'] },
+  // Path 3: Nima -> Verdis
+  { id: 'z5', name: 'Подземелье данных', x: 20, y: 55, type: 'zone', connectedTo: ['nima', 'z6'] },
+  { id: 'z6', name: 'Пустошь шепотов', x: 35, y: 30, type: 'zone', connectedTo: ['z5', 'verdis'] },
 ];
 
 interface WorldMapModalProps {
