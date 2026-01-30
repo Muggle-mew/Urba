@@ -15,7 +15,7 @@
         {
             "label": "Установить все зависимости",
             "type": "shell",
-            "command": "npm install && cd client && npm install && cd ../server && npm install",
+            "command": "npm install && npm install --prefix client && npm install --prefix server",
             "problemMatcher": [],
             "detail": "Устанавливает npm пакеты для корня, клиента и сервера"
         }

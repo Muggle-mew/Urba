@@ -106,6 +106,37 @@ async function main() {
   console.log('Seeding items done.');
 
   await seedMonsters(prisma);
+  console.log('Monsters seeded successfully.');
+
+  // Seed default user and character
+  const userId = 'user_123';
+  const charId = 'char_123';
+
+  const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+  if (!existingUser) {
+    await prisma.user.create({
+      data: {
+        id: userId,
+      }
+    });
+    console.log('Created default user: ' + userId);
+  }
+
+  const existingChar = await prisma.character.findUnique({ where: { id: charId } });
+  if (!existingChar) {
+    await prisma.character.create({
+      data: {
+        id: charId,
+        userId: userId,
+        nickname: 'Survivor',
+        faction: 'neutral',
+        location: JSON.stringify({ city: 'verdis', isTraveling: false }),
+        inventory: "[]",
+        equipment: "{}"
+      }
+    });
+    console.log('Created default character: ' + charId);
+  }
 }
 
 main()
