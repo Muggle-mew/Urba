@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Запустить Urba (Client + Server)",
+            "type": "npm",
+            "script": "dev",
+            "problemMatcher": [],
+            "detail": "Запускает клиент и сервер одновременно",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Установить все зависимости",
+            "type": "shell",
+            "command": "npm install && cd client && npm install && cd ../server && npm install",
+            "problemMatcher": [],
+            "detail": "Устанавливает npm пакеты для корня, клиента и сервера"
+        }
+    ]
+}
